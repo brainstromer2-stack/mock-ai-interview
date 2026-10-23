@@ -1,4 +1,4 @@
-import os
+iimport os
 import json
 import re
 import streamlit as st
@@ -84,7 +84,7 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #aaa;border-radius:8p
   try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});video.srcObject=stream;
    camStatus.textContent='Camera started. Loading pose model…';await loadPose();requestAnimationFrame(frame);send();}
   catch(e){camStatus.textContent='Camera permission denied or unavailable: '+e.message;}
-   };
+ };
  document.getElementById('stopCam').onclick=()=>{if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;postureEl.textContent='Camera stopped.';visibilityEl.textContent='—';camStatus.textContent='Camera stopped.';send();};
  document.getElementById('startMic').onclick=()=>{
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -154,6 +154,10 @@ def basic_feedback(text, posture_note, question=""):
     improvements, strengths = [], []
     q_lower = (question or "").lower()
 
+    if words < 12:
+        strengths.append("You gave a direct starting point.")
+        improvements.append("Your answer is very short. Add context, what you did, and what happened.")
+    elif words < 35:
         strengths.append("You addressed the question with a concise response.")
         improvements.append("Add one concrete detail or example so the interviewer can judge your experience.")
     elif words <= 110:
