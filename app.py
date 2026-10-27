@@ -31,7 +31,6 @@ st.markdown(f"""
     .main-header {{ font-size: 2.4rem; font-weight: 700; color: {accent_color}; margin-bottom: 0px; }}
     .sub-caption {{ font-size: 1.05rem; opacity: 0.8; margin-bottom: 20px; }}
     .panel {{ background-color: {panel_bg}; border: 1px solid {border_color}; border-radius: 12px; padding: 16px; margin-bottom: 12px; }}
-    .guidance-box {{ background-color: {panel_bg}; border-left: 4px solid {accent_color}; padding: 12px 16px; border-radius: 6px; margin-bottom: 15px; font-size: 0.95rem; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -39,7 +38,7 @@ st.markdown('<p class="main-header">🎤 AI Mock Interviewer Pro</p>', unsafe_al
 st.markdown('<p class="sub-caption">Real-time local computer vision posture cues, speech recognition transcription, and dynamic non-repetitive feedback analytics.</p>', unsafe_allow_html=True)
 
 # --- WEBCAM & SPEECH COMPONENT ---
-COMPONENT_HTML = r"""
+COMPONENT_HTML = """
 <div style="font-family:system-ui,sans-serif">
 <style>
 .panel-inner{border:1px solid #cbd5e1;border-radius:12px;padding:16px;margin-bottom:12px;background:rgba(255,255,255,0.02);box-shadow: 0 2px 4px rgba(0,0,0,0.05)}
@@ -203,7 +202,6 @@ answer = st.text_area("Your response (transcribed or typed manually)", value=bro
 posture = browser_data.get("posture", "No live posture data received yet.")
 
 def advanced_heuristic_feedback(text, posture_note, question=""):
-    """Advanced dynamic heuristic analyzer with randomized variation to prevent repetition."""
     answer = (text or "").strip()
     lower = answer.lower()
     words_list = re.findall(r"\b[\w'-]+\b", answer)
@@ -211,7 +209,6 @@ def advanced_heuristic_feedback(text, posture_note, question=""):
     improvements, strengths = [], []
     q_lower = (question or "").lower()
 
-    # Dynamic Length Analysis
     if words < 12:
         strengths.append("Quick, direct opening.")
         improvements.append(f"Your answer contains only {words} words. Expand on your answer by detailing your personal role and the project outcome.")
@@ -224,7 +221,6 @@ def advanced_heuristic_feedback(text, posture_note, question=""):
         strengths.append("Comprehensive explanation provided.")
         improvements.append("Consider trimming minor tangents to keep the interviewer fully focused on core milestones.")
 
-    # STAR Keyword Detection
     has_situation = any(term in lower for term in ["when", "project", "role", "time", "company", "team", "background"])
     has_action = any(term in lower for term in ["built", "designed", "implemented", "resolved", "led", "developed", "created", "analyzed", "handled"])
     has_result = any(term in lower for term in ["result", "outcome", "improved", "reduced", "increased", "learned", "successfully", "delivered"])
@@ -232,4 +228,132 @@ def advanced_heuristic_feedback(text, posture_note, question=""):
     if has_situation: strengths.append("Successfully established context or background situation.")
     else: improvements.append("Begin by clearly establishing the context or challenge you encountered.")
 
-    if has_action: strengths.append("Demonstrated clear personal ownership through
+    if has_action: strengths.append("Demonstrated clear personal ownership through active verbs.")
+    else: improvements.append("Explicitly state the actions *you* took rather than just general team efforts.")
+
+    if has_result: strengths.append("Concluded effectively with an outcome or takeaway.")
+    else: improvements.append("Wrap up your response by highlighting the final result or what you learned from the experience.")
+
+    score = 50 + min(words, 70) // 3 + (12 if has_situation else 0) + (13 if has_action else 0) + (12 if has_result else 0)
+    if words < 12: score -= 12
+    score = max(35, min(97, score))
+
+    return {
+        "score": score, 
+        "strengths": strengths, 
+        "improvements": improvements,
+        "sample_tip": "Remember: Situation -> Action -> Quantifiable Result."
+    }
+
+def get_ai_feedback(text, question):
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    prompt = f"""Review this interview answer constructively as an expert hiring manager. Role: {role}. Level: {level}.
+Question: {question}
+Answer: {text}
+Webcam Posture Cues: {posture}
+Return valid JSON with:
+- score (integer 0-100)
+- strengths (array of unique strings specific to this answer)
+- improvements (array of unique actionable suggestions)
+- sample_tip (string)
+Evaluate content, clarity, structure, and professional relevance. Avoid repetitive generic phrases."""
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "system", "content": "Return only valid JSON."}, {"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        temperature=0.5
+    )
+    return json.loads(response.choices[0].message.content)
+
+# Action Buttons
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    if st.button("💾 Save Answer", type="primary", use_container_width=True):
+        if answer.strip():
+            st.session_state.answers.append({"question": qs[st.session_state.qidx], "answer": answer.strip(), "posture": posture, "passed": False})
+            st.success("Answer saved successfully!")
+        else: 
+            st.warning("Please record or type an answer first.")
+with col2:
+    if st.button("⏭️ Pass / Skip", use_container_width=True):
+        st.session_state.answers.append({"question": qs[st.session_state.qidx], "answer": "[Passed / Skipped]", "posture": posture, "passed": True})
+        st.info("Question skipped and logged.")
+        st.session_state.qidx = (st.session_state.qidx + 1) % len(qs)
+        st.rerun()
+with col3:
+    if st.button("➡️ Next Question", use_container_width=True):
+        if answer.strip(): 
+            st.session_state.answers.append({"question": qs[st.session_state.qidx], "answer": answer.strip(), "posture": posture, "passed": False})
+        st.session_state.qidx = (st.session_state.qidx + 1) % len(qs)
+        st.rerun()
+with col4:
+    if st.button("🔄 Reset Session", use_container_width=True):
+        st.session_state.answers = []
+        st.session_state.qidx = 0
+        st.rerun()
+
+st.divider()
+
+# --- ANALYTICS & SAVED ANSWERS ---
+st.header("📊 Performance Analytics & Review")
+
+if st.session_state.answers:
+    scores, labels = [], []
+    for idx, item in enumerate(st.session_state.answers, 1):
+        if not item.get("passed", False):
+            fb_prev = advanced_heuristic_feedback(item["answer"], item.get("posture", ""))
+            scores.append(fb_prev["score"])
+            labels.append(f"Q{idx}")
+        else:
+            scores.append(0)
+            labels.append(f"Q{idx} (Passed)")
+
+    if scores:
+        fig = px.bar(
+            x=labels, y=scores, 
+            labels={"x": "Interview Question", "y": "Performance Score (/100)"},
+            title="Session Score Progression",
+            color=scores, color_continuous_scale="Viridis"
+        )
+        fig.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(color=text_color))
+        st.plotly_chart(fig, use_container_width=True)
+
+    for i, item in enumerate(st.session_state.answers, 1):
+        with st.expander(f"Question {i}: {item['question']} {'[PASSED]' if item.get('passed') else ''}"):
+            st.markdown(f"**Recorded Answer:** {item['answer']}")
+            st.markdown(f"**Posture Note Recorded:** {item.get('posture', 'Unavailable')}")
+            
+            if not item.get("passed", False):
+                if st.button(f"Generate Detailed Feedback (Q{i})", key=f"feedback_{i}", type="secondary"):
+                    try:
+                        with st.spinner("Analyzing communication depth & structure..."):
+                            fb = get_ai_feedback(item["answer"], item["question"]) if use_ai and os.getenv("OPENAI_API_KEY") else advanced_heuristic_feedback(item["answer"], item.get("posture", ""), item["question"])
+                        
+                        m1, m2 = st.columns(2)
+                        with m1:
+                            st.metric("Score", f"{fb.get('score', 0)} / 100")
+                        with m2:
+                            st.info(f"**Coaching Tip:** {fb.get('sample_tip', '')}")
+
+                        st.subheader("✅ Key Strengths")
+                        for s in fb.get("strengths", []):
+                            st.markdown(f"- {s}")
+
+                        st.subheader("🔧 Areas for Improvement")
+                        for imp in fb.get("improvements", []):
+                            st.markdown(f"- {imp}")
+
+                    except Exception as e:
+                        st.error(f"Feedback generation failed: {e}")
+            else:
+                st.info("Passed question — no evaluation required.")
+
+    st.divider()
+    report = "# AI Mock Interview Performance Report\n\n"
+    for i, item in enumerate(st.session_state.answers, 1):
+        status = "PASSED" if item.get("passed") else "ATTEMPTED"
+        report += f"## Question {i} ({status})\n**Prompt:** {item['question']}\n\n**Response:**\n{item['answer']}\n\n**Posture Status:** {item.get('posture', 'N/A')}\n\n---\n"
+    
+    st.download_button("📥 Download Comprehensive Markdown Report", report, file_name="interview_performance_report.md", mime="text/markdown")
+else:
+    st.caption("No answers recorded yet. Answer or pass questions above to view analytics.")
