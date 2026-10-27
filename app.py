@@ -337,8 +337,8 @@ if st.session_state.answers:
 
     for i, item in enumerate(st.session_state.answers, 1):
         with st.expander(f"Question {i}: {item['question']} {'[SKIPPED/PASSED]' if item.get('passed') else ''}"):
-            st.write(**"Recorded Answer:"**, item["answer"])
-            st.write(**"Posture Note Recorded:"**, item.get("posture", "Unavailable"))
+            st.markdown(f"**Recorded Answer:** {item['answer']}")
+            st.markdown(f"**Posture Note Recorded:** {item.get('posture', 'Unavailable')}")
             
             if not item.get("passed", False):
                 if st.button(f"Generate Deep Feedback (Q{i})", key=f"feedback_{i}", type="secondary"):
