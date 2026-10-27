@@ -19,23 +19,32 @@ st.session_state.theme = theme_choice
 
 # Define Theme Colors
 if theme_choice == "🌙 Dark Mode":
-    bg_color, panel_bg, text_color, border_color, accent_color = "#0e1117", "#161b22", "#f8fafc", "#30363d", "#2563eb"
+    bg_color, panel_bg, text_color, border_color, accent_color, card_bg = "#0e1117", "#161b22", "#f8fafc", "#30363d", "#2563eb", "#1f2937"
 elif theme_choice == "☀️ Light Mode":
-    bg_color, panel_bg, text_color, border_color, accent_color = "#f8fafc", "#ffffff", "#0f172a", "#cbd5e1", "#2563eb"
+    bg_color, panel_bg, text_color, border_color, accent_color, card_bg = "#f8fafc", "#ffffff", "#0f172a", "#cbd5e1", "#2563eb", "#f1f5f9"
 else:  # Corporate Executive
-    bg_color, panel_bg, text_color, border_color, accent_color = "#0f172a", "#1e293b", "#f1f5f9", "#334155", "#3b82f6"
+    bg_color, panel_bg, text_color, border_color, accent_color, card_bg = "#0f172a", "#1e293b", "#f1f5f9", "#334155", "#3b82f6", "#1e293b"
 
 st.markdown(f"""
 <style>
     .stApp {{ background-color: {bg_color}; color: {text_color}; }}
     .main-header {{ font-size: 2.4rem; font-weight: 700; color: {accent_color}; margin-bottom: 0px; }}
     .sub-caption {{ font-size: 1.05rem; opacity: 0.8; margin-bottom: 20px; }}
-    .panel {{ background-color: {panel_bg}; border: 1px solid {border_color}; border-radius: 12px; padding: 16px; margin-bottom: 12px; }}
+    .question-banner {{
+        background: linear-gradient(135deg, {accent_color}, #1e40af);
+        color: #ffffff;
+        padding: 20px 24px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }}
+    .question-title {{ font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85; margin-bottom: 6px; }}
+    .question-text {{ font-size: 1.3rem; font-weight: 600; line-height: 1.4; }}
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown('<p class="main-header">🎤 AI Mock Interviewer Pro</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-caption">Real-time local computer vision posture cues, speech recognition transcription, and dynamic non-repetitive feedback analytics.</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-caption">Real-time local computer vision posture cues, speech recognition transcription, and dynamic feedback analytics tailored to your profile.</p>', unsafe_allow_html=True)
 
 # --- WEBCAM & SPEECH COMPONENT ---
 COMPONENT_HTML = """
@@ -136,32 +145,33 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
 </div>
 """
 
+# --- RELEVANT ROLE-SPECIFIC QUESTIONS ---
 QUESTIONS = {
     "Software Developer": [
-        "Tell me about yourself and your technical background.",
-        "Describe a challenging bug you solved and how you approached it.",
-        "How do you make sure your code is reliable and maintainable?"
+        "Walk me through a complex architectural decision or system design you implemented recently.",
+        "Describe a critical production bug you debugged under pressure and how you resolved it.",
+        "How do you ensure high code quality, maintainability, and test coverage across your team?"
     ],
-    "Student / Fresher": [
-        "Tell me about yourself.",
-        "Describe a project or achievement you are proud of.",
-        "What is one skill you are working to improve, and how?"
+    "Data Scientist / AI Engineer": [
+        "Explain how you handle data drift and model degradation in production machine learning pipelines.",
+        "Describe a time when your model's performance didn't meet business expectations. How did you iterate?",
+        "How do you balance model interpretability vs. predictive accuracy when presenting insights to stakeholders?"
+    ],
+    "Product Manager": [
+        "How do you prioritize your product backlog when faced with conflicting stakeholder requests?",
+        "Tell me about a time when a product launch failed or underperformed. What did you learn?",
+        "How do you define and measure product success using quantitative and qualitative metrics?"
     ],
     "Sales / Customer Service": [
-        "Tell me about yourself and your experience working with people.",
-        "Describe how you would handle an unhappy customer.",
-        "How do you stay motivated when you hear 'no'?"
-    ],
-    "General": [
-        "Tell me about yourself.",
-        "What is one strength you would bring to this role?",
-        "Describe a challenge you faced and how you handled it."
+        "Walk me through how you handle an objection from a high-stakes client or customer.",
+        "Describe a situation where you successfully turned an upset customer into a loyal advocate.",
+        "How do you maintain high personal motivation and resilience during a tough quota period?"
     ]
 }
 
 with st.sidebar:
     st.header("⚙️ Interview Setup")
-    role = st.selectbox("Select Role", list(QUESTIONS))
+    role = st.selectbox("Select Target Role", list(QUESTIONS))
     level = st.selectbox("Experience Level", ["Student / Entry-level", "Intermediate", "Experienced"])
     use_ai = st.checkbox("Enable OpenAI Analytics", value=bool(os.getenv("OPENAI_API_KEY")))
     
@@ -182,16 +192,22 @@ if "answers" not in st.session_state: st.session_state.answers = []
 qs = QUESTIONS[role]
 st.session_state.qidx %= len(qs)
 
-st.markdown(f"### Question {st.session_state.qidx + 1} of {len(qs)}")
-st.info(f"**Prompt:** {qs[st.session_state.qidx]}")
+# --- HIGHLIGHTED QUESTION PROMPT BANNER ---
+current_question = qs[st.session_state.qidx]
+st.markdown(f"""
+<div class="question-banner">
+    <div class="question-title">Question {st.session_state.qidx + 1} of {len(qs)} &bull; Target Profile: {role}</div>
+    <div class="question-text">{current_question}</div>
+</div>
+""", unsafe_allow_html=True)
 
 # --- INTERACTIVE GUIDANCE BOX (STAR METHOD HINTS) ---
 with st.expander("💡 Guidance & Tips for Answering This Question (STAR Framework)", expanded=False):
     st.markdown("""
-    * **Situation / Task**: Briefly set the context or explain the core problem you faced.
-    * **Action**: Highlight the specific steps *you* personally took, tools used, or decisions made.
-    * **Result**: Conclude with the measurable outcome, feedback received, or lesson learned.
-    * **Tip**: Keep your response structured between 60 to 120 words for optimal impact.
+    * **Situation / Task**: Set the technical or professional context and state the core objective.
+    * **Action**: Explain the exact technical or strategic steps *you* personally executed.
+    * **Result**: Conclude with tangible outcomes, performance gains, metrics, or lessons learned.
+    * **Tip**: Keep your response concise, structured, and focused on your individual impact.
     """)
 
 browser_data = components.html(COMPONENT_HTML, height=560, scrolling=True)
@@ -210,29 +226,29 @@ def advanced_heuristic_feedback(text, posture_note, question=""):
     q_lower = (question or "").lower()
 
     if words < 12:
-        strengths.append("Quick, direct opening.")
-        improvements.append(f"Your answer contains only {words} words. Expand on your answer by detailing your personal role and the project outcome.")
+        strengths.append("Quick opening.")
+        improvements.append(f"Your answer contains only {words} words. Elaborate with specifics on your role and outcome.")
     elif words < 35:
-        strengths.append("Concise and to the point.")
-        improvements.append("Add one concrete technical example or specific metric to substantiate your claim.")
-    elif words <= 130:
-        strengths.append("Excellent pacing and depth of detail.")
+        strengths.append("Concise delivery.")
+        improvements.append("Add a concrete example or metric to substantiate your professional claim.")
+    elif words <= 140:
+        strengths.append("Solid depth and pacing.")
     else:
-        strengths.append("Comprehensive explanation provided.")
-        improvements.append("Consider trimming minor tangents to keep the interviewer fully focused on core milestones.")
+        strengths.append("Thorough explanation.")
+        improvements.append("Trim minor tangents to keep the focus tight on core milestones.")
 
-    has_situation = any(term in lower for term in ["when", "project", "role", "time", "company", "team", "background"])
-    has_action = any(term in lower for term in ["built", "designed", "implemented", "resolved", "led", "developed", "created", "analyzed", "handled"])
-    has_result = any(term in lower for term in ["result", "outcome", "improved", "reduced", "increased", "learned", "successfully", "delivered"])
+    has_situation = any(term in lower for term in ["when", "project", "role", "time", "company", "team", "background", "designed", "built"])
+    has_action = any(term in lower for term in ["led", "developed", "created", "analyzed", "handled", "implemented", "resolved", "prioritized"])
+    has_result = any(term in lower for term in ["result", "outcome", "improved", "reduced", "increased", "learned", "successfully", "delivered", "metric"])
 
-    if has_situation: strengths.append("Successfully established context or background situation.")
-    else: improvements.append("Begin by clearly establishing the context or challenge you encountered.")
+    if has_situation: strengths.append("Successfully established context.")
+    else: improvements.append("Start by clearly stating the context or challenge you encountered.")
 
-    if has_action: strengths.append("Demonstrated clear personal ownership through active verbs.")
-    else: improvements.append("Explicitly state the actions *you* took rather than just general team efforts.")
+    if has_action: strengths.append("Demonstrated personal ownership with active verbs.")
+    else: improvements.append("Explicitly state the exact steps *you* performed.")
 
-    if has_result: strengths.append("Concluded effectively with an outcome or takeaway.")
-    else: improvements.append("Wrap up your response by highlighting the final result or what you learned from the experience.")
+    if has_result: strengths.append("Concluded with an effective outcome or takeaway.")
+    else: improvements.append("Wrap up by highlighting the measurable result or lesson learned.")
 
     score = 50 + min(words, 70) // 3 + (12 if has_situation else 0) + (13 if has_action else 0) + (12 if has_result else 0)
     if words < 12: score -= 12
@@ -242,12 +258,12 @@ def advanced_heuristic_feedback(text, posture_note, question=""):
         "score": score, 
         "strengths": strengths, 
         "improvements": improvements,
-        "sample_tip": "Remember: Situation -> Action -> Quantifiable Result."
+        "sample_tip": "Remember: Situation -> Action -> Measurable Result."
     }
 
 def get_ai_feedback(text, question):
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    prompt = f"""Review this interview answer constructively as an expert hiring manager. Role: {role}. Level: {level}.
+    prompt = f"""Review this interview answer constructively as an expert hiring manager for a {role} role ({level}).
 Question: {question}
 Answer: {text}
 Webcam Posture Cues: {posture}
@@ -270,20 +286,20 @@ col1, col2, col3, col4 = st.columns(4)
 with col1:
     if st.button("💾 Save Answer", type="primary", use_container_width=True):
         if answer.strip():
-            st.session_state.answers.append({"question": qs[st.session_state.qidx], "answer": answer.strip(), "posture": posture, "passed": False})
+            st.session_state.answers.append({"question": current_question, "answer": answer.strip(), "posture": posture, "passed": False})
             st.success("Answer saved successfully!")
         else: 
             st.warning("Please record or type an answer first.")
 with col2:
     if st.button("⏭️ Pass / Skip", use_container_width=True):
-        st.session_state.answers.append({"question": qs[st.session_state.qidx], "answer": "[Passed / Skipped]", "posture": posture, "passed": True})
+        st.session_state.answers.append({"question": current_question, "answer": "[Passed / Skipped]", "posture": posture, "passed": True})
         st.info("Question skipped and logged.")
         st.session_state.qidx = (st.session_state.qidx + 1) % len(qs)
         st.rerun()
 with col3:
     if st.button("➡️ Next Question", use_container_width=True):
         if answer.strip(): 
-            st.session_state.answers.append({"question": qs[st.session_state.qidx], "answer": answer.strip(), "posture": posture, "passed": False})
+            st.session_state.answers.append({"question": current_question, "answer": answer.strip(), "posture": posture, "passed": False})
         st.session_state.qidx = (st.session_state.qidx + 1) % len(qs)
         st.rerun()
 with col4:
@@ -326,7 +342,7 @@ if st.session_state.answers:
             if not item.get("passed", False):
                 if st.button(f"Generate Detailed Feedback (Q{i})", key=f"feedback_{i}", type="secondary"):
                     try:
-                        with st.spinner("Analyzing communication depth & structure..."):
+                        with st.spinner("Analyzing communication depth & profile relevance..."):
                             fb = get_ai_feedback(item["answer"], item["question"]) if use_ai and os.getenv("OPENAI_API_KEY") else advanced_heuristic_feedback(item["answer"], item.get("posture", ""), item["question"])
                         
                         m1, m2 = st.columns(2)
