@@ -46,7 +46,7 @@ st.markdown(f"""
 st.markdown('<p class="main-header">🎤 AI Mock Interviewer Pro</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-caption">Real-time local computer vision posture cues, speech recognition transcription, and dynamic feedback analytics tailored to your profile.</p>', unsafe_allow_html=True)
 
-# --- WEBCAM & SPEECH COMPONENT ---
+# --- WEBCAM & SPEECH COMPONENT WITH LISTENING INTERFACE ---
 COMPONENT_HTML = """
 <div style="font-family:system-ui,sans-serif">
 <style>
@@ -61,6 +61,26 @@ button:hover{background:#475569}
 .danger:hover{background:#b91c1c}
 .status{font-size:13px;padding:6px 0;font-weight:500}
 textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:12px;font:inherit;background:rgba(0,0,0,0.1);color:inherit}
+/* Pulsing listening indicator */
+.listening-badge {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #ef4444;
+  margin-right: 6px;
+  box-shadow: 0 0 0 rgba(239, 68, 68, 0.4);
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+.mic-active-box {
+  border: 2px solid #ef4444 !important;
+  background: rgba(239, 68, 68, 0.05) !important;
+}
 </style>
 <div class="row">
  <div class="col panel-inner">
@@ -72,7 +92,7 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
   <button class="primary" id="startCam">Start camera</button>
   <button class="danger" id="stopCam">Stop camera</button>
  </div>
- <div class="col panel-inner">
+ <div class="col panel-inner" id="micPanel">
   <h3>🎙️ Speech Transcript</h3>
   <div id="micStatus" class="status">Microphone idle.</div>
   <button class="primary" id="startMic">Start speaking</button>
@@ -86,11 +106,14 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
  const video=document.getElementById('video'), camStatus=document.getElementById('camStatus');
  const postureEl=document.getElementById('posture'), visibilityEl=document.getElementById('visibility');
  const micStatus=document.getElementById('micStatus'), answer=document.getElementById('answer');
+ const micPanel=document.getElementById('micPanel');
  let stream=null, detector=null, recognition=null, finalText='';
+
  function send(){
   const value={answer:answer.value,posture:postureEl.textContent,visibility:visibilityEl.textContent,camera_active:!!stream};
   window.parent.postMessage({isStreamlitMessage:true,type:'streamlit:setComponentValue',value},'*');
  }
+
  async function loadPose(){
   try{
    const vision=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14');
@@ -102,6 +125,7 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
    camStatus.textContent='Camera active — live pose analysis running.';
   }catch(e){camStatus.textContent='Pose model failed to load.';}
  }
+
  function frame(now){
   if(!stream||video.readyState<2)return;
   if(detector){
@@ -121,25 +145,71 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
   }
   requestAnimationFrame(frame);
  }
+
  document.getElementById('startCam').onclick=async()=>{
   try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});video.srcObject=stream;
    camStatus.textContent='Camera started. Loading pose model…';await loadPose();requestAnimationFrame(frame);send();}
   catch(e){camStatus.textContent='Camera permission denied.';}
  };
+
  document.getElementById('stopCam').onclick=()=>{if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;postureEl.textContent='Camera stopped.';visibilityEl.textContent='—';camStatus.textContent='Camera stopped.';send();};
+
  document.getElementById('startMic').onclick=()=>{
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){micStatus.textContent='Speech recognition unsupported. Please type your answer.';return;}
-  recognition=new SR();recognition.continuous=true;recognition.interimResults=true;recognition.lang='en-US';
-  finalText=answer.value?answer.value+' ':'';
-  recognition.onstart=()=>micStatus.textContent='Listening… speak clearly.';
-  recognition.onerror=e=>micStatus.textContent='Microphone error: '+e.error;
-  recognition.onend=()=>{micStatus.textContent='Listening stopped.';send();};
-  recognition.onresult=e=>{let interim='';for(let i=e.resultIndex;i<e.results.length;i++){let t=e.results[i][0].transcript;if(e.results[i].isFinal)finalText+=t+' ';else interim+=t;}answer.value=(finalText+interim).trim();send();};
-  recognition.start();
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){
+   micStatus.innerHTML = '⚠️ Speech recognition unsupported in this browser. Please use Google Chrome or Microsoft Edge, or type your answer below.';
+   return;
+  }
+  try {
+   recognition = new SR();
+   recognition.continuous = true;
+   recognition.interimResults = true;
+   recognition.lang = 'en-US';
+   
+   finalText = answer.value ? answer.value + ' ' : '';
+
+   recognition.onstart = () => {
+    micStatus.innerHTML = '<span class="listening-badge"></span><strong>Listening… speak clearly into your microphone.</strong>';
+    micPanel.classList.add('mic-active-box');
+   };
+
+   recognition.onerror = e => {
+    micStatus.textContent = '❌ Microphone error: ' + e.error + '. Check browser microphone permissions.';
+    micPanel.classList.remove('mic-active-box');
+   };
+
+   recognition.onend = () => {
+    micStatus.textContent = 'Microphone stopped listening.';
+    micPanel.classList.remove('mic-active-box');
+    send();
+   };
+
+   recognition.onresult = e => {
+    let interim = '';
+    for(let i = e.resultIndex; i < e.results.length; i++){
+     let t = e.results[i][0].transcript;
+     if(e.results[i].isFinal) finalText += t + ' ';
+     else interim += t;
+    }
+    answer.value = (finalText + interim).trim();
+    send();
+   };
+
+   recognition.start();
+  } catch(err) {
+   micStatus.textContent = 'Failed to start microphone: ' + err.message;
+  }
  };
- document.getElementById('stopMic').onclick=()=>{if(recognition)recognition.stop();};
- answer.addEventListener('input',send);
+
+ document.getElementById('stopMic').onclick = () => {
+  if(recognition) {
+   recognition.stop();
+  }
+  micPanel.classList.remove('mic-active-box');
+  micStatus.textContent = 'Microphone stopped.';
+ };
+
+ answer.addEventListener('input', send);
 })();
 </script>
 </div>
