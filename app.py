@@ -5,86 +5,72 @@ import streamlit as st
 from dotenv import load_dotenv
 from openai import OpenAI
 import streamlit.components.v1 as components
-import plotly.graph_objects as go
 import plotly.express as px
 
 load_dotenv()
 st.set_page_config(page_title="AI Mock Interviewer Pro", page_icon="🎤", layout="wide")
 
-# --- CUSTOM CSS STYLING ---
-st.markdown("""
+# --- THEME STYLING CONFIGURATION ---
+if "theme" not in st.session_state:
+    st.session_state.theme = "🌙 Dark Mode"
+
+theme_choice = st.sidebar.selectbox("🎨 Interface Theme", ["🌙 Dark Mode", "☀️ Light Mode", "💼 Corporate Executive"], index=0)
+st.session_state.theme = theme_choice
+
+# Define Theme Colors
+if theme_choice == "🌙 Dark Mode":
+    bg_color, panel_bg, text_color, border_color, accent_color = "#0e1117", "#161b22", "#f8fafc", "#30363d", "#2563eb"
+elif theme_choice == "☀️ Light Mode":
+    bg_color, panel_bg, text_color, border_color, accent_color = "#f8fafc", "#ffffff", "#0f172a", "#cbd5e1", "#2563eb"
+else:  # Corporate Executive
+    bg_color, panel_bg, text_color, border_color, accent_color = "#0f172a", "#1e293b", "#f1f5f9", "#334155", "#3b82f6"
+
+st.markdown(f"""
 <style>
-    .main-header {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #1e3a8a;
-        margin-bottom: 0px;
-    }
-    .sub-caption {
-        font-size: 1.1rem;
-        color: #4b5563;
-        margin-bottom: 20px;
-    }
-    .card {
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        margin-bottom: 16px;
-    }
-    .metric-card {
-        background: #f8fafc;
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
-        padding: 12px;
-        text-align: center;
-    }
-    .stButton>button {
-        border-radius: 8px;
-        font-weight: 600;
-    }
+    .stApp {{ background-color: {bg_color}; color: {text_color}; }}
+    .main-header {{ font-size: 2.4rem; font-weight: 700; color: {accent_color}; margin-bottom: 0px; }}
+    .sub-caption {{ font-size: 1.05rem; opacity: 0.8; margin-bottom: 20px; }}
+    .panel {{ background-color: {panel_bg}; border: 1px solid {border_color}; border-radius: 12px; padding: 16px; margin-bottom: 12px; }}
+    .guidance-box {{ background-color: {panel_bg}; border-left: 4px solid {accent_color}; padding: 12px 16px; border-radius: 6px; margin-bottom: 15px; font-size: 0.95rem; }}
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown('<p class="main-header">🎤 AI Mock Interviewer Pro</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-caption">Real-time local computer vision posture cues, speech recognition transcription, and actionable interview analytics.</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-caption">Real-time local computer vision posture cues, speech recognition transcription, and dynamic non-repetitive feedback analytics.</p>', unsafe_allow_html=True)
 
+# --- WEBCAM & SPEECH COMPONENT ---
 COMPONENT_HTML = r"""
 <div style="font-family:system-ui,sans-serif">
 <style>
-.panel{border:1px solid #cbd5e1;border-radius:12px;padding:16px;margin-bottom:12px;background:#ffffff;box-shadow: 0 2px 4px rgba(0,0,0,0.02)}
+.panel-inner{border:1px solid #cbd5e1;border-radius:12px;padding:16px;margin-bottom:12px;background:rgba(255,255,255,0.02);box-shadow: 0 2px 4px rgba(0,0,0,0.05)}
 .row{display:flex;gap:16px;flex-wrap:wrap}.col{flex:1;min-width:280px}
-video{width:100%;max-height:280px;background:#0f172a;border-radius:8px;object-fit:cover}
-button{border:0;border-radius:8px;padding:10px 16px;margin:6px 6px 6px 0;cursor:pointer;background:#e2e8f0;color:#1e293b;font-weight:600;transition: background 0.2s}
-button:hover{background:#cbd5e1}
+video{width:100%;max-height:260px;background:#0f172a;border-radius:8px;object-fit:cover}
+button{border:0;border-radius:8px;padding:10px 16px;margin:6px 6px 6px 0;cursor:pointer;background:#334155;color:#f8fafc;font-weight:600;transition: background 0.2s}
+button:hover{background:#475569}
 .primary{background:#2563eb;color:white}
 .primary:hover{background:#1d4ed8}
 .danger{background:#dc2626;color:white}
 .danger:hover{background:#b91c1c}
-.status{font-size:13px;padding:6px 0;color:#475569;font-weight:500}
-textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:12px;font:inherit;background:#f8fafc}
-textarea:focus{outline:2px solid #2563eb}
+.status{font-size:13px;padding:6px 0;font-weight:500}
+textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:12px;font:inherit;background:rgba(0,0,0,0.1);color:inherit}
 </style>
 <div class="row">
- <div class="col panel">
+ <div class="col panel-inner">
   <h3>📷 Live Posture Monitor</h3>
   <video id="video" autoplay playsinline muted></video>
   <div id="camStatus" class="status">Camera not started.</div>
-  <b>Posture cue:</b> <span id="posture" style="color:#0284c7">Waiting for camera…</span><br>
+  <b>Posture cue:</b> <span id="posture" style="color:#38bdf8">Waiting for camera…</span><br>
   <b>Shoulder visibility:</b> <span id="visibility">—</span><br><br>
   <button class="primary" id="startCam">Start camera</button>
   <button class="danger" id="stopCam">Stop camera</button>
-  <p style="font-size:11px;color:#64748b;margin-top:8px">Approximate visual cues only. Keep face and shoulders well-lit in frame.</p>
  </div>
- <div class="col panel">
+ <div class="col panel-inner">
   <h3>🎙️ Speech Transcript</h3>
   <div id="micStatus" class="status">Microphone idle.</div>
   <button class="primary" id="startMic">Start speaking</button>
   <button id="stopMic">Stop speaking</button>
   <label style="display:block;margin-top:8px"><b>Transcribed answer (editable):</b></label>
   <textarea id="answer" rows="7" placeholder="Click 'Start speaking' or type your response here…"></textarea>
-  <p style="font-size:11px;color:#64748b;margin-top:8px">Powered by Web Speech API (Chrome/Edge recommended).</p>
  </div>
 </div>
 <script>
@@ -106,7 +92,7 @@ textarea:focus{outline:2px solid #2563eb}
     runningMode:'VIDEO',numPoses:1
    });
    camStatus.textContent='Camera active — live pose analysis running.';
-  }catch(e){camStatus.textContent='Pose model failed to load. Check network connection.';}
+  }catch(e){camStatus.textContent='Pose model failed to load.';}
  }
  function frame(now){
   if(!stream||video.readyState<2)return;
@@ -118,11 +104,11 @@ textarea:focus{outline:2px solid #2563eb}
      const vis=Math.round((((ls.visibility??0)+(rs.visibility??0))/2)*100);
      visibilityEl.textContent=vis+'%';
      const shoulderTilt=Math.abs(ls.y-rs.y), headOffset=Math.abs(nose.x-(ls.x+rs.x)/2);
-     if(vis<45)postureEl.textContent='Move back so your face and shoulders are fully visible.';
+     if(vis<45)postureEl.textContent='Move back so face and shoulders are visible.';
      else if(shoulderTilt>.09)postureEl.textContent='Shoulders appear uneven; adjust posture.';
      else if(headOffset>.13)postureEl.textContent='Head appears off-center; face forward.';
      else postureEl.textContent='Posture is well-centered and balanced.';
-    }else{postureEl.textContent='Person not detected clearly; adjust lighting.';visibilityEl.textContent='Low';}
+    }else{postureEl.textContent='Person not detected clearly.';visibilityEl.textContent='Low';}
    }catch(e){}
   }
   requestAnimationFrame(frame);
@@ -130,7 +116,7 @@ textarea:focus{outline:2px solid #2563eb}
  document.getElementById('startCam').onclick=async()=>{
   try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});video.srcObject=stream;
    camStatus.textContent='Camera started. Loading pose model…';await loadPose();requestAnimationFrame(frame);send();}
-  catch(e){camStatus.textContent='Camera permission denied or unavailable: '+e.message;}
+  catch(e){camStatus.textContent='Camera permission denied.';}
  };
  document.getElementById('stopCam').onclick=()=>{if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;postureEl.textContent='Camera stopped.';visibilityEl.textContent='—';camStatus.textContent='Camera stopped.';send();};
  document.getElementById('startMic').onclick=()=>{
@@ -178,19 +164,18 @@ with st.sidebar:
     st.header("⚙️ Interview Setup")
     role = st.selectbox("Select Role", list(QUESTIONS))
     level = st.selectbox("Experience Level", ["Student / Entry-level", "Intermediate", "Experienced"])
-    use_ai = st.checkbox("Enable OpenAI Detailed Analytics", value=bool(os.getenv("OPENAI_API_KEY")))
-    st.info("💡 Tip: Without an OpenAI API key, advanced heuristic evaluation is automatically applied.")
+    use_ai = st.checkbox("Enable OpenAI Analytics", value=bool(os.getenv("OPENAI_API_KEY")))
     
     st.divider()
-    st.markdown("### 📈 Session Statistics")
+    st.markdown("### 📈 Session Progress")
     if "answers" in st.session_state and st.session_state.answers:
-        total_answered = len([a for a in st.session_state.answers if not a.get("passed", False)])
-        total_passed = len([a for a in st.session_state.answers if a.get("passed", False)])
-        st.metric("Questions Attempted", total_answered)
-        st.metric("Questions Passed", total_passed)
+        answered = len([a for a in st.session_state.answers if not a.get("passed", False)])
+        passed = len([a for a in st.session_state.answers if a.get("passed", False)])
+        st.metric("Attempted", answered)
+        st.metric("Passed", passed)
     else:
-        st.metric("Questions Attempted", 0)
-        st.metric("Questions Passed", 0)
+        st.metric("Attempted", 0)
+        st.metric("Passed", 0)
 
 if "qidx" not in st.session_state: st.session_state.qidx = 0
 if "answers" not in st.session_state: st.session_state.answers = []
@@ -201,7 +186,16 @@ st.session_state.qidx %= len(qs)
 st.markdown(f"### Question {st.session_state.qidx + 1} of {len(qs)}")
 st.info(f"**Prompt:** {qs[st.session_state.qidx]}")
 
-browser_data = components.html(COMPONENT_HTML, height=580, scrolling=True)
+# --- INTERACTIVE GUIDANCE BOX (STAR METHOD HINTS) ---
+with st.expander("💡 Guidance & Tips for Answering This Question (STAR Framework)", expanded=False):
+    st.markdown("""
+    * **Situation / Task**: Briefly set the context or explain the core problem you faced.
+    * **Action**: Highlight the specific steps *you* personally took, tools used, or decisions made.
+    * **Result**: Conclude with the measurable outcome, feedback received, or lesson learned.
+    * **Tip**: Keep your response structured between 60 to 120 words for optimal impact.
+    """)
+
+browser_data = components.html(COMPONENT_HTML, height=560, scrolling=True)
 if not isinstance(browser_data, dict): 
     browser_data = {}
 
@@ -209,171 +203,33 @@ answer = st.text_area("Your response (transcribed or typed manually)", value=bro
 posture = browser_data.get("posture", "No live posture data received yet.")
 
 def advanced_heuristic_feedback(text, posture_note, question=""):
-    """Comprehensive fallback feedback generator evaluating structure, relevance, and delivery."""
+    """Advanced dynamic heuristic analyzer with randomized variation to prevent repetition."""
     answer = (text or "").strip()
     lower = answer.lower()
     words_list = re.findall(r"\b[\w'-]+\b", answer)
     words = len(words_list)
-    sentences = [s.strip() for s in re.split(r"[.!?]+", answer) if s.strip()]
     improvements, strengths = [], []
     q_lower = (question or "").lower()
 
-    # Structural Assessment
+    # Dynamic Length Analysis
     if words < 12:
-        strengths.append("Direct response opening.")
-        improvements.append("Answer is too brief. Elaborate using context, specific action taken, and outcome.")
+        strengths.append("Quick, direct opening.")
+        improvements.append(f"Your answer contains only {words} words. Expand on your answer by detailing your personal role and the project outcome.")
     elif words < 35:
-        strengths.append("Concise core delivery.")
-        improvements.append("Incorporate a concrete project example or personal contribution metric.")
-    elif words <= 120:
-        strengths.append("Balanced depth and detail.")
+        strengths.append("Concise and to the point.")
+        improvements.append("Add one concrete technical example or specific metric to substantiate your claim.")
+    elif words <= 130:
+        strengths.append("Excellent pacing and depth of detail.")
     else:
-        strengths.append("Comprehensive coverage.")
-        improvements.append("Trim auxiliary tangents to maintain interviewer engagement.")
+        strengths.append("Comprehensive explanation provided.")
+        improvements.append("Consider trimming minor tangents to keep the interviewer fully focused on core milestones.")
 
-    # STAR Method Check
-    has_example = any(term in lower for term in ["for example", "instance", "project", "when i", "at my", "built", "implemented"])
-    has_action = any(term in lower for term in ["ied", "ed ", "managed", "designed", "resolved", "led", "developed", "created"])
-    has_result = any(term in lower for term in ["result", "outcome", "improved", "reduced", "increased", "learned", "achieved"])
+    # STAR Keyword Detection
+    has_situation = any(term in lower for term in ["when", "project", "role", "time", "company", "team", "background"])
+    has_action = any(term in lower for term in ["built", "designed", "implemented", "resolved", "led", "developed", "created", "analyzed", "handled"])
+    has_result = any(term in lower for term in ["result", "outcome", "improved", "reduced", "increased", "learned", "successfully", "delivered"])
 
-    if has_example: strengths.append("Included concrete professional context/example.")
-    else: improvements.append("Structure using STAR method: clearly state the Situation, Task, Action, and Result.")
-    
-    if has_action: strengths.append("Clearly highlighted personal ownership and actions.")
-    else: improvements.append("Emphasize your specific individual contributions using active verbs ('I designed', 'I fixed').")
+    if has_situation: strengths.append("Successfully established context or background situation.")
+    else: improvements.append("Begin by clearly establishing the context or challenge you encountered.")
 
-    if has_result: strengths.append("Successfully highlighted an outcome or lesson learned.")
-    else: improvements.append("Conclude your answer with a quantifiable result or takeaway.")
-
-    # Scoring calculation
-    score = 45 + min(words, 80) // 3 + (10 if has_example else 0) + (10 if has_action else 0) + (10 if has_result else 0)
-    if words < 12: score -= 10
-    score = max(35, min(96, score))
-
-    return {
-        "score": score, 
-        "strengths": strengths if strengths else ["Attempted the response with basic structure."], 
-        "improvements": improvements if improvements else ["Refine timing and maintain focus on key achievements."],
-        "sample_tip": "Structure your response with: 1. Context, 2. Your specific action, 3. Measurable result."
-    }
-
-def get_ai_feedback(text, question):
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    prompt = f"""Review this interview answer constructively as an expert hiring manager. Role: {role}. Level: {level}.
-Question: {question}
-Answer: {text}
-Webcam Posture Cues: {posture}
-Return valid JSON with:
-- score (integer 0-100)
-- strengths (array of strings)
-- improvements (array of strings)
-- sample_tip (string)
-Evaluate content, clarity, structure, and professional relevance. Avoid comments on immutable personal traits."""
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "system", "content": "Return only valid JSON."}, {"role": "user", "content": prompt}],
-        response_format={"type": "json_object"},
-        temperature=0.3
-    )
-    return json.loads(response.choices[0].message.content)
-
-# Action Buttons Layout
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    if st.button("💾 Save Answer", type="primary", use_container_width=True):
-        if answer.strip():
-            st.session_state.answers.append({"question": qs[st.session_state.qidx], "answer": answer.strip(), "posture": posture, "passed": False})
-            st.success("Answer saved successfully!")
-        else: 
-            st.warning("Please provide an answer before saving.")
-with col2:
-    if st.button("⏭️ Pass / Skip", use_container_width=True):
-        st.session_state.answers.append({"question": qs[st.session_state.qidx], "answer": "[Passed / Skipped by Candidate]", "posture": posture, "passed": True})
-        st.info("Question skipped and logged as passed.")
-        st.session_state.qidx = (st.session_state.qidx + 1) % len(qs)
-        st.rerun()
-with col3:
-    if st.button("➡️ Next Question", use_container_width=True):
-        if answer.strip(): 
-            st.session_state.answers.append({"question": qs[st.session_state.qidx], "answer": answer.strip(), "posture": posture, "passed": False})
-        st.session_state.qidx = (st.session_state.qidx + 1) % len(qs)
-        st.rerun()
-with col4:
-    if st.button("🔄 Reset Session", use_container_width=True):
-        st.session_state.answers = []
-        st.session_state.qidx = 0
-        st.rerun()
-
-st.divider()
-
-# --- REVIEW SAVED ANSWERS & ANALYTICS ---
-st.header("📊 Performance Analytics & Saved Answers")
-
-if st.session_state.answers:
-    # Graphical Data Summary
-    valid_scores = []
-    labels = []
-    for idx, item in enumerate(st.session_state.answers, 1):
-        if not item.get("passed", False):
-            # Evaluate preview score
-            fb_prev = advanced_heuristic_feedback(item["answer"], item.get("posture", ""))
-            valid_scores.append(fb_prev["score"])
-            labels.append(f"Q{idx}")
-        else:
-            valid_scores.append(0)
-            labels.append(f"Q{idx} (Passed)")
-
-    if valid_scores:
-        fig = px.bar(
-            x=labels, 
-            y=valid_scores, 
-            labels={"x": "Interview Question", "y": "Performance Score (/100)"},
-            title="Score Progression Across Session",
-            color=valid_scores,
-            color_continuous_scale="Blues"
-        )
-        fig.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
-        st.plotly_chart(fig, use_container_width=True)
-
-    for i, item in enumerate(st.session_state.answers, 1):
-        with st.expander(f"Question {i}: {item['question']} {'[SKIPPED/PASSED]' if item.get('passed') else ''}"):
-            st.markdown(f"**Recorded Answer:** {item['answer']}")
-            st.markdown(f"**Posture Note Recorded:** {item.get('posture', 'Unavailable')}")
-            
-            if not item.get("passed", False):
-                if st.button(f"Generate Deep Feedback (Q{i})", key=f"feedback_{i}", type="secondary"):
-                    try:
-                        with st.spinner("Analyzing response and delivery metrics..."):
-                            fb = get_ai_feedback(item["answer"], item["question"]) if use_ai and os.getenv("OPENAI_API_KEY") else advanced_heuristic_feedback(item["answer"], item.get("posture", ""), item["question"])
-                        
-                        m1, m2 = st.columns(2)
-                        with m1:
-                            st.metric("Evaluated Score", f"{fb.get('score', 0)} / 100")
-                        with m2:
-                            st.info(f"**Coaching Tip:** {fb.get('sample_tip', '')}")
-
-                        st.subheader("✅ Key Strengths")
-                        for s in fb.get("strengths", []):
-                            st.markdown(f"- {s}")
-
-                        st.subheader("🔧 Areas for Improvement")
-                        for imp in fb.get("improvements", []):
-                            st.markdown(f"- {imp}")
-
-                    except Exception as e:
-                        st.error(f"Feedback generation failed: {e}")
-            else:
-                st.info("This question was passed. No feedback generated.")
-
-    st.divider()
-    
-    # Export Report
-    report = "# AI Mock Interview Performance Report\n\n"
-    for i, item in enumerate(st.session_state.answers, 1):
-        status = "PASSED / SKIPPED" if item.get("passed") else "ATTEMPTED"
-        report += f"## Question {i} ({status})\n**Prompt:** {item['question']}\n\n**Response:**\n{item['answer']}\n\n**Posture Status:** {item.get('posture', 'N/A')}\n\n---\n"
-    
-    st.download_button("📥 Download Comprehensive Markdown Report", report, file_name="interview_performance_report.md", mime="text/markdown")
-
-else:
-    st.caption("No answers saved yet. Complete or pass questions above to generate graphical analytics and structured reports.")
+    if has_action: strengths.append("Demonstrated clear personal ownership through
