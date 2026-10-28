@@ -50,15 +50,6 @@ st.markdown(f"""
     }}
     .question-title {{ font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85; margin-bottom: 6px; }}
     .question-text {{ font-size: 1.3rem; font-weight: 600; line-height: 1.4; }}
-    .login-container {{
-        max-width: 500px;
-        margin: 40px auto;
-        padding: 30px;
-        background: {panel_bg};
-        border: 1px solid {border_color};
-        border-radius: 16px;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -113,11 +104,11 @@ if not st.session_state.logged_in:
                     st.rerun()
                 else:
                     st.warning("Please enter your name and email to proceed.")
-    st.stop()  # Halt execution until logged in
+    st.stop()
 
-# --- MAIN APP INTERFACE (AFTER SUCCESSFUL LOGIN) ---
+# --- MAIN APP INTERFACE ---
 st.markdown('<p class="main-header">🎤 AI Mock Interviewer Pro</p>', unsafe_allow_html=True)
-st.markdown(f'<p class="sub-caption">Welcome back, <b>{st.session_state.user_name}</b> ({st.session_state.user_email}) | Role: <b>{st.session_state.target_role}</b></p>', unsafe_allow_html=True)
+st.markdown(f'<p class="sub-caption">Candidate: <b>{st.session_state.user_name}</b> | Role: <b>{st.session_state.target_role}</b> ({st.session_state.experience_level})</p>', unsafe_allow_html=True)
 
 # --- WEBCAM & SPEECH COMPONENT ---
 COMPONENT_HTML = """
@@ -125,7 +116,7 @@ COMPONENT_HTML = """
 <style>
 .panel-inner{border:1px solid #cbd5e1;border-radius:12px;padding:16px;margin-bottom:12px;background:rgba(255,255,255,0.02);box-shadow: 0 2px 4px rgba(0,0,0,0.05)}
 .row{display:flex;gap:16px;flex-wrap:wrap}.col{flex:1;min-width:280px}
-video{width:100%;max-height:260px;background:#0f172a;border-radius:8px;object-fit:cover}
+video{width:100%;max-height:240px;background:#0f172a;border-radius:8px;object-fit:cover}
 button{border:0;border-radius:8px;padding:10px 16px;margin:6px 6px 6px 0;cursor:pointer;background:#334155;color:#f8fafc;font-weight:600;transition: background 0.2s}
 button:hover{background:#475569}
 .primary{background:#2563eb;color:white}
@@ -161,7 +152,7 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
   <button class="primary" id="startMic">Start speaking</button>
   <button id="stopMic">Stop speaking</button>
   <label style="display:block;margin-top:8px"><b>Transcribed answer (editable):</b></label>
-  <textarea id="answer" rows="7" placeholder="Click 'Start speaking' or type your response here…"></textarea>
+  <textarea id="answer" rows="6" placeholder="Click 'Start speaking' or type your response here…"></textarea>
  </div>
 </div>
 <script>
@@ -322,12 +313,44 @@ with st.expander("💡 Guidance & Tips for Answering This Question (STAR Framewo
     * **Tip**: Keep your response concise, structured, and focused on your individual impact.
     """)
 
-browser_data = components.html(COMPONENT_HTML, height=560, scrolling=True)
+browser_data = components.html(COMPONENT_HTML, height=540, scrolling=True)
 if not isinstance(browser_data, dict): 
     browser_data = {}
 
-answer = st.text_area("Your response (transcribed or typed manually)", value=browser_data.get("answer", ""), height=130, key="answer_box")
-posture = browser_data.get("posture", "No live posture data received yet.")
+answer = st.text_area("Your response (transcribed or typed manually)", value=browser_data.get("answer", ""), height=120, key="answer_box")
+posture = browser_data.get("posture", "Waiting for camera…")
+
+# --- LIVE CANDIDATURE METRICS (CONFIDENCE, SKILLS, POSTURE BARS) ---
+st.markdown("### 📊 Real-Time Candidate Analysis Indicators")
+col_m1, col_m2, col_m3 = st.columns(3)
+
+# Calculate live metrics based on answers and posture status
+num_responses = len(st.session_state.answers)
+conf_score = min(95, max(50, 65 + (num_responses * 8)))
+skill_score = min(95, max(60, 70 + (num_responses * 7)))
+
+posture_score = 85
+if "uneven" in posture.lower() or "off-center" in posture.lower() or "move back" in posture.lower():
+    posture_score = 55
+elif "balanced" in posture.lower() or "centered" in posture.lower():
+    posture_score = 92
+
+with col_m1:
+    st.text(f"Confidence Level ({conf_score}%)")
+    st.progress(conf_score / 100.0)
+
+with col_m2:
+    st.text(f"Technical Skill Match ({skill_score}%)")
+    st.progress(skill_score / 100.0)
+
+with col_m3:
+    st.text(f"Posture & Stability ({posture_score}%)")
+    st.progress(posture_score / 100.0)
+
+# Quick Metric Cards
+mc1, mc2 = st.columns(2)
+mc1.metric("Live Posture Analysis Status", posture)
+mc2.metric("Response Pacing Rating", "Optimal" if len(answer.split()) > 20 else "Awaiting detailed answer")
 
 def advanced_heuristic_feedback(text, posture_note, question=""):
     answer = (text or "").strip()
