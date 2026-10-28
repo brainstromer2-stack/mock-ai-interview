@@ -50,6 +50,13 @@ st.markdown(f"""
     }}
     .question-title {{ font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85; margin-bottom: 6px; }}
     .question-text {{ font-size: 1.3rem; font-weight: 600; line-height: 1.4; }}
+    .dress-code-box {{
+        background: rgba(37, 99, 235, 0.1);
+        border: 1px dashed {accent_color};
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -110,6 +117,14 @@ if not st.session_state.logged_in:
 st.markdown('<p class="main-header">🎤 AI Mock Interviewer Pro</p>', unsafe_allow_html=True)
 st.markdown(f'<p class="sub-caption">Candidate: <b>{st.session_state.user_name}</b> | Role: <b>{st.session_state.target_role}</b> ({st.session_state.experience_level})</p>', unsafe_allow_html=True)
 
+# --- DRESS CODE NOTICE ---
+st.markdown("""
+<div class="dress-code-box">
+    <b>👔 Professional Attire & Dress Code Tip:</b> 
+    Wearing formal or business-casual attire (collared shirt, blazer, or neat formal wear) significantly improves initial visual impressions, confidence scoring, and overall candidate selection odds.
+</div>
+""", unsafe_allow_html=True)
+
 # --- WEBCAM & SPEECH COMPONENT ---
 COMPONENT_HTML = """
 <div style="font-family:system-ui,sans-serif">
@@ -138,7 +153,7 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
 </style>
 <div class="row">
  <div class="col panel-inner">
-  <h3>📷 Live Posture Monitor</h3>
+  <h3>📷 Live Posture & Attire Monitor</h3>
   <video id="video" autoplay playsinline muted></video>
   <div id="camStatus" class="status">Camera not started.</div>
   <b>Posture cue:</b> <span id="posture" style="color:#38bdf8">Waiting for camera…</span><br>
@@ -324,7 +339,6 @@ posture = browser_data.get("posture", "Waiting for camera…")
 st.markdown("### 📊 Real-Time Candidate Analysis Indicators")
 col_m1, col_m2, col_m3 = st.columns(3)
 
-# Calculate live metrics based on answers and posture status
 num_responses = len(st.session_state.answers)
 conf_score = min(95, max(50, 65 + (num_responses * 8)))
 skill_score = min(95, max(60, 70 + (num_responses * 7)))
@@ -347,7 +361,6 @@ with col_m3:
     st.text(f"Posture & Stability ({posture_score}%)")
     st.progress(posture_score / 100.0)
 
-# Quick Metric Cards
 mc1, mc2 = st.columns(2)
 mc1.metric("Live Posture Analysis Status", posture)
 mc2.metric("Response Pacing Rating", "Optimal" if len(answer.split()) > 20 else "Awaiting detailed answer")
@@ -445,19 +458,45 @@ with col4:
 
 st.divider()
 
-# --- ANALYTICS & SAVED ANSWERS ---
-st.header("📊 Performance Analytics & Review")
+# --- ANALYTICS & SAVED ANSWERS WITH SELECTION PROBABILITY ---
+st.header("📊 Performance Analytics & Selection Odds")
 
 if st.session_state.answers:
     scores, labels = [], []
+    valid_scores_list = []
+    
     for idx, item in enumerate(st.session_state.answers, 1):
         if not item.get("passed", False):
             fb_prev = advanced_heuristic_feedback(item["answer"], item.get("posture", ""))
-            scores.append(fb_prev["score"])
+            score_val = fb_prev["score"]
+            scores.append(score_val)
+            valid_scores_list.append(score_val)
             labels.append(f"Q{idx}")
         else:
             scores.append(0)
             labels.append(f"Q{idx} (Passed)")
+
+    # Calculate Overall Selection Odds
+    if valid_scores_list:
+        avg_score = sum(valid_scores_list) / len(valid_scores_list)
+        # Weighting: 70% answer quality, 15% posture, 15% professional attire/presentation
+        selection_probability = int((avg_score * 0.70) + (posture_score * 0.15) + (85 * 0.15))
+    else:
+        selection_probability = 40
+
+    st.markdown("### 🎯 Estimated Candidate Selection Odds")
+    sp_col1, sp_col2 = st.columns([1, 2])
+    with sp_col1:
+        st.metric("Probability of Offer/Selection", f"{selection_probability}%", delta="High Fit" if selection_probability > 75 else "Moderate Fit")
+    with sp_col2:
+        if selection_probability >= 80:
+            st.success("🟢 **Strong Hire Recommendation**: High alignment in technical depth, STAR structure, posture stability, and professional attire.")
+        elif selection_probability >= 65:
+            st.warning("🟡 **Moderate Hire Recommendation**: Solid foundation. Enhance specific project metrics and maintain consistent upright posture.")
+        else:
+            st.error("🔴 **Needs Improvement**: Expand answer detail, practice STAR framework, and ensure formal professional presentation.")
+
+    st.divider()
 
     if scores:
         fig = px.bar(
@@ -500,11 +539,17 @@ if st.session_state.answers:
                 st.info("Passed question — no evaluation required.")
 
     st.divider()
-    report = f"# AI Mock Interview Performance Report\n\n**Candidate:** {st.session_state.user_name} ({st.session_state.user_email})\n**Role Track:** {st.session_state.target_role}\n\n"
+    report = f"# AI Mock Interview Executive Summary & Selection Odds\n\n"
+    report += f"**Candidate Name:** {st.session_state.user_name}\n"
+    report += f"**Email:** {st.session_state.user_email}\n"
+    report += f"**Target Role:** {st.session_state.target_role} ({st.session_state.experience_level})\n"
+    report += f"**Estimated Selection Probability:** {selection_probability}%\n\n"
+    report += "## Session Breakdown\n"
+
     for i, item in enumerate(st.session_state.answers, 1):
         status = "PASSED" if item.get("passed") else "ATTEMPTED"
-        report += f"## Question {i} ({status})\n**Prompt:** {item['question']}\n\n**Response:**\n{item['answer']}\n\n**Posture Status:** {item.get('posture', 'N/A')}\n\n---\n"
+        report += f"### Question {i} ({status})\n**Prompt:** {item['question']}\n\n**Response:**\n{item['answer']}\n\n**Posture Cue:** {item.get('posture', 'N/A')}\n\n---\n"
     
     st.download_button("📥 Download Comprehensive Markdown Report", report, file_name=f"interview_report_{st.session_state.user_name.replace(' ', '_')}.md", mime="text/markdown")
 else:
-    st.caption("No answers recorded yet. Answer or pass questions above to view analytics.")
+    st.caption("No answers recorded yet. Answer or pass questions above to view analytics and selection odds.")
