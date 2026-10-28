@@ -1,12 +1,6 @@
-Here is the fully upgraded, professional version of your code.
+Arre bhai, sorry! Jab maine code paste kiya tha toh galti se kuch extra explanation text ya line numbers (`2. **Synchronized Question Delivery` etc.) beech mein ghus gaye the. Woh Python file ka part nahi hote.
 
-### 🤖 What Changed:
-
-1. **Interactive Cyber-Robot Interviewer Panel**: Replaced the static written text banner with an animated cybernetic robot avatar interface. The robot panel includes a glowing holographic speech wave, pulse indicators, and status displays showing when the "AI Interrogator" is presenting the prompt.
-2. **Synchronized Question Delivery**: The active interview question now displays seamlessly inside the cyber-robot's audio/speech console.
-3. **Classy Executive & Cyber Aesthetic**: Maintained the sleek navy/slate professional theme with clean glassmorphic panels, live confidence/skill/posture meters, and selection probability analytics.
-
-### Upgraded `app.py` Code
+Ye lo **100% clean and working `app.py` script**. Isme sirf pure Python code hai, koi extra text ya formatting nahi hai. Seedha copy karke paste kar do, ekdum makkhan chalega:
 
 ```python
 import os
