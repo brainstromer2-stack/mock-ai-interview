@@ -10,14 +10,24 @@ import plotly.express as px
 load_dotenv()
 st.set_page_config(page_title="AI Mock Interviewer Pro", page_icon="🎤", layout="wide")
 
-# --- THEME STYLING CONFIGURATION ---
+# --- INITIALIZE SESSION STATE FOR AUTHENTICATION ---
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "user_name" not in st.session_state:
+    st.session_state.user_name = ""
+if "user_email" not in st.session_state:
+    st.session_state.user_email = ""
+if "target_role" not in st.session_state:
+    st.session_state.target_role = "Software Developer"
+if "experience_level" not in st.session_state:
+    st.session_state.experience_level = "Intermediate"
 if "theme" not in st.session_state:
     st.session_state.theme = "🌙 Dark Mode"
 
+# --- THEME STYLING CONFIGURATION ---
 theme_choice = st.sidebar.selectbox("🎨 Interface Theme", ["🌙 Dark Mode", "☀️ Light Mode", "💼 Corporate Executive"], index=0)
 st.session_state.theme = theme_choice
 
-# Define Theme Colors
 if theme_choice == "🌙 Dark Mode":
     bg_color, panel_bg, text_color, border_color, accent_color, card_bg = "#0e1117", "#161b22", "#f8fafc", "#30363d", "#2563eb", "#1f2937"
 elif theme_choice == "☀️ Light Mode":
@@ -40,13 +50,76 @@ st.markdown(f"""
     }}
     .question-title {{ font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85; margin-bottom: 6px; }}
     .question-text {{ font-size: 1.3rem; font-weight: 600; line-height: 1.4; }}
+    .login-container {{
+        max-width: 500px;
+        margin: 40px auto;
+        padding: 30px;
+        background: {panel_bg};
+        border: 1px solid {border_color};
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }}
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<p class="main-header">🎤 AI Mock Interviewer Pro</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-caption">Real-time local computer vision posture cues, speech recognition transcription, and dynamic feedback analytics tailored to your profile.</p>', unsafe_allow_html=True)
+# --- QUESTION BANK ---
+QUESTIONS = {
+    "Software Developer": [
+        "Walk me through a complex architectural decision or system design you implemented recently.",
+        "Describe a critical production bug you debugged under pressure and how you resolved it.",
+        "How do you ensure high code quality, maintainability, and test coverage across your team?"
+    ],
+    "Data Scientist / AI Engineer": [
+        "Explain how you handle data drift and model degradation in production machine learning pipelines.",
+        "Describe a time when your model's performance didn't meet business expectations. How did you iterate?",
+        "How do you balance model interpretability vs. predictive accuracy when presenting insights to stakeholders?"
+    ],
+    "Product Manager": [
+        "How do you prioritize your product backlog when faced with conflicting stakeholder requests?",
+        "Tell me about a time when a product launch failed or underperformed. What did you learn?",
+        "How do you define and measure product success using quantitative and qualitative metrics?"
+    ],
+    "Sales / Customer Service": [
+        "Walk me through how you handle an objection from a high-stakes client or customer.",
+        "Describe a situation where you successfully turned an upset customer into a loyal advocate.",
+        "How do you maintain high personal motivation and resilience during a tough quota period?"
+    ]
+}
 
-# --- WEBCAM & SPEECH COMPONENT WITH LISTENING INTERFACE ---
+# --- AUTHENTICATION GATE (LOGIN / SIGNUP) ---
+if not st.session_state.logged_in:
+    st.markdown('<div style="text-align: center; margin-top: 30px;">', unsafe_allow_html=True)
+    st.markdown("<h1>🎤 Welcome to AI Mock Interviewer Pro</h1>", unsafe_allow_html=True)
+    st.markdown("<p>Sign up or log in to customize your interview profile and track your progress.</p>", unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns([1, 1.2, 1])
+    with col2:
+        with st.form("login_form"):
+            st.subheader("Candidate Onboarding / Login")
+            name_input = st.text_input("Full Name", placeholder="e.g., Alex Johnson")
+            email_input = st.text_input("Email Address", placeholder="e.g., alex@example.com")
+            role_input = st.selectbox("Select Target Job Role", list(QUESTIONS.keys()))
+            level_input = st.selectbox("Experience Level", ["Student / Entry-level", "Intermediate", "Experienced"])
+            
+            submit_btn = st.form_submit_button("🚀 Start Interview Session", use_container_width=True)
+            if submit_btn:
+                if name_input.strip() and email_input.strip():
+                    st.session_state.logged_in = True
+                    st.session_state.user_name = name_input.strip()
+                    st.session_state.user_email = email_input.strip()
+                    st.session_state.target_role = role_input
+                    st.session_state.experience_level = level_input
+                    st.rerun()
+                else:
+                    st.warning("Please enter your name and email to proceed.")
+    st.stop()  # Halt execution until logged in
+
+# --- MAIN APP INTERFACE (AFTER SUCCESSFUL LOGIN) ---
+st.markdown('<p class="main-header">🎤 AI Mock Interviewer Pro</p>', unsafe_allow_html=True)
+st.markdown(f'<p class="sub-caption">Welcome back, <b>{st.session_state.user_name}</b> ({st.session_state.user_email}) | Role: <b>{st.session_state.target_role}</b></p>', unsafe_allow_html=True)
+
+# --- WEBCAM & SPEECH COMPONENT ---
 COMPONENT_HTML = """
 <div style="font-family:system-ui,sans-serif">
 <style>
@@ -61,15 +134,8 @@ button:hover{background:#475569}
 .danger:hover{background:#b91c1c}
 .status{font-size:13px;padding:6px 0;font-weight:500}
 textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:12px;font:inherit;background:rgba(0,0,0,0.1);color:inherit}
-/* Pulsing listening indicator */
 .listening-badge {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background-color: #ef4444;
-  margin-right: 6px;
-  box-shadow: 0 0 0 rgba(239, 68, 68, 0.4);
+  display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #ef4444; margin-right: 6px;
   animation: pulse 1.5s infinite;
 }
 @keyframes pulse {
@@ -77,10 +143,7 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
   70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
-.mic-active-box {
-  border: 2px solid #ef4444 !important;
-  background: rgba(239, 68, 68, 0.05) !important;
-}
+.mic-active-box { border: 2px solid #ef4444 !important; background: rgba(239, 68, 68, 0.05) !important; }
 </style>
 <div class="row">
  <div class="col panel-inner">
@@ -157,7 +220,7 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
  document.getElementById('startMic').onclick=()=>{
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR){
-   micStatus.innerHTML = '⚠️ Speech recognition unsupported in this browser. Please use Google Chrome or Microsoft Edge, or type your answer below.';
+   micStatus.innerHTML = '⚠️ Speech recognition unsupported. Please use Chrome/Edge or type your answer.';
    return;
   }
   try {
@@ -165,25 +228,21 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
    recognition.continuous = true;
    recognition.interimResults = true;
    recognition.lang = 'en-US';
-   
    finalText = answer.value ? answer.value + ' ' : '';
 
    recognition.onstart = () => {
     micStatus.innerHTML = '<span class="listening-badge"></span><strong>Listening… speak clearly into your microphone.</strong>';
     micPanel.classList.add('mic-active-box');
    };
-
    recognition.onerror = e => {
-    micStatus.textContent = '❌ Microphone error: ' + e.error + '. Check browser microphone permissions.';
+    micStatus.textContent = '❌ Microphone error: ' + e.error;
     micPanel.classList.remove('mic-active-box');
    };
-
    recognition.onend = () => {
     micStatus.textContent = 'Microphone stopped listening.';
     micPanel.classList.remove('mic-active-box');
     send();
    };
-
    recognition.onresult = e => {
     let interim = '';
     for(let i = e.resultIndex; i < e.results.length; i++){
@@ -194,7 +253,6 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
     answer.value = (finalText + interim).trim();
     send();
    };
-
    recognition.start();
   } catch(err) {
    micStatus.textContent = 'Failed to start microphone: ' + err.message;
@@ -202,9 +260,7 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
  };
 
  document.getElementById('stopMic').onclick = () => {
-  if(recognition) {
-   recognition.stop();
-  }
+  if(recognition) recognition.stop();
   micPanel.classList.remove('mic-active-box');
   micStatus.textContent = 'Microphone stopped.';
  };
@@ -215,34 +271,13 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
 </div>
 """
 
-# --- RELEVANT ROLE-SPECIFIC QUESTIONS ---
-QUESTIONS = {
-    "Software Developer": [
-        "Walk me through a complex architectural decision or system design you implemented recently.",
-        "Describe a critical production bug you debugged under pressure and how you resolved it.",
-        "How do you ensure high code quality, maintainability, and test coverage across your team?"
-    ],
-    "Data Scientist / AI Engineer": [
-        "Explain how you handle data drift and model degradation in production machine learning pipelines.",
-        "Describe a time when your model's performance didn't meet business expectations. How did you iterate?",
-        "How do you balance model interpretability vs. predictive accuracy when presenting insights to stakeholders?"
-    ],
-    "Product Manager": [
-        "How do you prioritize your product backlog when faced with conflicting stakeholder requests?",
-        "Tell me about a time when a product launch failed or underperformed. What did you learn?",
-        "How do you define and measure product success using quantitative and qualitative metrics?"
-    ],
-    "Sales / Customer Service": [
-        "Walk me through how you handle an objection from a high-stakes client or customer.",
-        "Describe a situation where you successfully turned an upset customer into a loyal advocate.",
-        "How do you maintain high personal motivation and resilience during a tough quota period?"
-    ]
-}
-
 with st.sidebar:
-    st.header("⚙️ Interview Setup")
-    role = st.selectbox("Select Target Role", list(QUESTIONS))
-    level = st.selectbox("Experience Level", ["Student / Entry-level", "Intermediate", "Experienced"])
+    st.header("⚙️ User Profile")
+    st.write(f"**Name:** {st.session_state.user_name}")
+    st.write(f"**Email:** {st.session_state.user_email}")
+    st.write(f"**Role:** {st.session_state.target_role}")
+    st.write(f"**Level:** {st.session_state.experience_level}")
+    
     use_ai = st.checkbox("Enable OpenAI Analytics", value=bool(os.getenv("OPENAI_API_KEY")))
     
     st.divider()
@@ -255,23 +290,30 @@ with st.sidebar:
     else:
         st.metric("Attempted", 0)
         st.metric("Passed", 0)
+        
+    st.divider()
+    if st.button("🚪 Logout / Switch Profile", use_container_width=True):
+        st.session_state.logged_in = False
+        st.session_state.answers = []
+        st.session_state.qidx = 0
+        st.rerun()
 
 if "qidx" not in st.session_state: st.session_state.qidx = 0
 if "answers" not in st.session_state: st.session_state.answers = []
 
-qs = QUESTIONS[role]
+qs = QUESTIONS[st.session_state.target_role]
 st.session_state.qidx %= len(qs)
 
 # --- HIGHLIGHTED QUESTION PROMPT BANNER ---
 current_question = qs[st.session_state.qidx]
 st.markdown(f"""
 <div class="question-banner">
-    <div class="question-title">Question {st.session_state.qidx + 1} of {len(qs)} &bull; Target Profile: {role}</div>
+    <div class="question-title">Question {st.session_state.qidx + 1} of {len(qs)} &bull; Profile: {st.session_state.target_role}</div>
     <div class="question-text">{current_question}</div>
 </div>
 """, unsafe_allow_html=True)
 
-# --- INTERACTIVE GUIDANCE BOX (STAR METHOD HINTS) ---
+# --- STAR METHOD GUIDANCE ---
 with st.expander("💡 Guidance & Tips for Answering This Question (STAR Framework)", expanded=False):
     st.markdown("""
     * **Situation / Task**: Set the technical or professional context and state the core objective.
@@ -293,7 +335,6 @@ def advanced_heuristic_feedback(text, posture_note, question=""):
     words_list = re.findall(r"\b[\w'-]+\b", answer)
     words = len(words_list)
     improvements, strengths = [], []
-    q_lower = (question or "").lower()
 
     if words < 12:
         strengths.append("Quick opening.")
@@ -333,7 +374,8 @@ def advanced_heuristic_feedback(text, posture_note, question=""):
 
 def get_ai_feedback(text, question):
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    prompt = f"""Review this interview answer constructively as an expert hiring manager for a {role} role ({level}).
+    prompt = f"""Review this interview answer constructively as an expert hiring manager for a {st.session_state.target_role} role ({st.session_state.experience_level}).
+Candidate Name: {st.session_state.user_name}
 Question: {question}
 Answer: {text}
 Webcam Posture Cues: {posture}
@@ -342,7 +384,7 @@ Return valid JSON with:
 - strengths (array of unique strings specific to this answer)
 - improvements (array of unique actionable suggestions)
 - sample_tip (string)
-Evaluate content, clarity, structure, and professional relevance. Avoid repetitive generic phrases."""
+Evaluate content, clarity, structure, and professional relevance."""
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "system", "content": "Return only valid JSON."}, {"role": "user", "content": prompt}],
@@ -398,7 +440,7 @@ if st.session_state.answers:
         fig = px.bar(
             x=labels, y=scores, 
             labels={"x": "Interview Question", "y": "Performance Score (/100)"},
-            title="Session Score Progression",
+            title=f"Session Score Progression for {st.session_state.user_name}",
             color=scores, color_continuous_scale="Viridis"
         )
         fig.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(color=text_color))
@@ -435,11 +477,11 @@ if st.session_state.answers:
                 st.info("Passed question — no evaluation required.")
 
     st.divider()
-    report = "# AI Mock Interview Performance Report\n\n"
+    report = f"# AI Mock Interview Performance Report\n\n**Candidate:** {st.session_state.user_name} ({st.session_state.user_email})\n**Role Track:** {st.session_state.target_role}\n\n"
     for i, item in enumerate(st.session_state.answers, 1):
         status = "PASSED" if item.get("passed") else "ATTEMPTED"
         report += f"## Question {i} ({status})\n**Prompt:** {item['question']}\n\n**Response:**\n{item['answer']}\n\n**Posture Status:** {item.get('posture', 'N/A')}\n\n---\n"
     
-    st.download_button("📥 Download Comprehensive Markdown Report", report, file_name="interview_performance_report.md", mime="text/markdown")
+    st.download_button("📥 Download Comprehensive Markdown Report", report, file_name=f"interview_report_{st.session_state.user_name.replace(' ', '_')}.md", mime="text/markdown")
 else:
     st.caption("No answers recorded yet. Answer or pass questions above to view analytics.")
