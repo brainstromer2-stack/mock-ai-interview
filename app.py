@@ -1,8 +1,3 @@
-Arre bhai, sorry! Jab maine code paste kiya tha toh galti se kuch extra explanation text ya line numbers (`2. **Synchronized Question Delivery` etc.) beech mein ghus gaye the. Woh Python file ka part nahi hote.
-
-Ye lo **100% clean and working `app.py` script**. Isme sirf pure Python code hai, koi extra text ya formatting nahi hai. Seedha copy karke paste kar do, ekdum makkhan chalega:
-
-```python
 import os
 import json
 import re
@@ -574,5 +569,3 @@ if st.session_state.answers:
     st.download_button("📥 Download Executive Dossier (Markdown)", report, file_name=f"executive_dossier_{st.session_state.user_name.replace(' ', '_')}.md", mime="text/markdown")
 else:
     st.caption("No assessment items recorded yet. Answer or pass items above to generate analytics and selection odds.")
-
-```
