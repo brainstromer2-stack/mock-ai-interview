@@ -124,42 +124,66 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# Calculate live indicator values beforehand so they can be injected into the UI
+num_responses = len(st.session_state.get("answers", []))
+conf_score = min(95, max(50, 65 + (num_responses * 8)))
+skill_score = min(95, max(60, 70 + (num_responses * 7)))
+
 # --- COMBINED WEBCAM, LIVE METRICS & SPEECH COMPONENT ---
-COMPONENT_HTML = """
+COMPONENT_HTML = f"""
 <div style="font-family:system-ui,sans-serif">
 <style>
-.panel-inner{border:1px solid #cbd5e1;border-radius:12px;padding:16px;margin-bottom:12px;background:rgba(255,255,255,0.02);box-shadow: 0 2px 4px rgba(0,0,0,0.05)}
-.row{display:flex;gap:16px;flex-wrap:wrap}.col{flex:1;min-width:280px}
-video{width:100%;max-height:220px;background:#0f172a;border-radius:8px;object-fit:cover}
-button{border:0;border-radius:8px;padding:8px 14px;margin:4px 4px 4px 0;cursor:pointer;background:#334155;color:#f8fafc;font-weight:600;transition: background 0.2s}
-button:hover{background:#475569}
-.primary{background:#2563eb;color:white}
-.primary:hover{background:#1d4ed8}
-.danger{background:#dc2626;color:white}
-.danger:hover{background:#b91c1c}
-.status{font-size:12px;padding:4px 0;font-weight:500}
-.live-badge{background:#0284c7;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;display:inline-block;margin-bottom:6px}
-textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:10px;font:inherit;background:rgba(0,0,0,0.1);color:inherit}
-.listening-badge {
+.panel-inner{{border:1px solid #cbd5e1;border-radius:12px;padding:16px;margin-bottom:12px;background:rgba(255,255,255,0.02);box-shadow: 0 2px 4px rgba(0,0,0,0.05)}}
+.row{{display:flex;gap:16px;flex-wrap:wrap}}.col{{flex:1;min-width:280px}}
+video{{width:100%;max-height:190px;background:#0f172a;border-radius:8px;object-fit:cover}}
+button{{border:0;border-radius:8px;padding:8px 14px;margin:4px 4px 4px 0;cursor:pointer;background:#334155;color:#f8fafc;font-weight:600;transition: background 0.2s}}
+button:hover{{background:#475569}}
+.primary{{background:#2563eb;color:white}}
+.primary:hover{{background:#1d4ed8}}
+.danger{{background:#dc2626;color:white}}
+.danger:hover{{background:#b91c1c}}
+.status{{font-size:12px;padding:4px 0;font-weight:500}}
+.live-badge{{background:#0284c7;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;display:inline-block;margin-bottom:6px}}
+textarea{{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:10px;font:inherit;background:rgba(0,0,0,0.1);color:inherit}}
+.listening-badge {{
   display: inline-block; width: 9px; height: 9px; border-radius: 50%; background-color: #ef4444; margin-right: 6px;
   animation: pulse 1.5s infinite;
-}
-@keyframes pulse {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-}
-.mic-active-box { border: 2px solid #ef4444 !important; background: rgba(239, 68, 68, 0.05) !important; }
+}}
+@keyframes pulse {{
+  0% {{ transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }}
+  70% {{ transform: scale(1); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }}
+  100% {{ transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }}
+}}
+.mic-active-box {{ border: 2px solid #ef4444 !important; background: rgba(239, 68, 68, 0.05) !important; }}
+.indicator-bar-container {{ margin-top: 6px; font-size: 11px; }}
+.bar-track {{ background: #334155; border-radius: 4px; height: 7px; width: 100%; margin-top: 2px; overflow: hidden; }}
+.bar-fill {{ background: #38bdf8; height: 100%; border-radius: 4px; }}
 </style>
 <div class="row">
  <div class="col panel-inner">
-  <div class="live-badge">LIVE CAMERA FEED & HUD</div>
+  <div class="live-badge">LIVE CAMERA & CANDIDATURE HUD</div>
   <video id="video" autoplay playsinline muted></video>
   <div id="camStatus" class="status">Camera not started.</div>
-  <div style="font-size:13px; margin-top:6px; background:rgba(0,0,0,0.15); padding:8px; border-radius:6px;">
-   <b>Posture Cue:</b> <span id="posture" style="color:#38bdf8">Waiting for camera…</span><br>
-   <b>Shoulder Visibility:</b> <span id="visibility">—</span>
+  
+  <div style="font-size:12px; margin-top:4px; background:rgba(0,0,0,0.15); padding:6px 8px; border-radius:6px;">
+   <b>Posture:</b> <span id="posture" style="color:#38bdf8">Waiting for camera…</span><br>
+   <b>Visibility:</b> <span id="visibility">—</span>
   </div>
+
+  <!-- Live Indicators Right Next to Footage -->
+  <div class="indicator-bar-container">
+    <div>Confidence Level (<span id="confLbl">{conf_score}</span>%)</div>
+    <div class="bar-track"><div class="bar-fill" id="confBar" style="width: {conf_score}%;"></div></div>
+  </div>
+  <div class="indicator-bar-container">
+    <div>Technical Skill Match (<span id="skillLbl">{skill_score}</span>%)</div>
+    <div class="bar-track"><div class="bar-fill" id="skillBar" style="width: {skill_score}%; background: #4ade80;"></div></div>
+  </div>
+  <div class="indicator-bar-container">
+    <div>Posture Stability (<span id="postureBarLbl">85</span>%)</div>
+    <div class="bar-track"><div class="bar-fill" id="postureBar" style="width: 85%; background: #facc15;"></div></div>
+  </div>
+
   <div style="margin-top:8px">
    <button class="primary" id="startCam">Start Cam</button>
    <button class="danger" id="stopCam">Stop Cam</button>
@@ -169,7 +193,7 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
   <div class="live-badge" style="background:#059669">MICROPHONE TRANSCRIPT</div>
   <div id="micStatus" class="status">Microphone idle.</div>
   <label style="display:block;margin-top:4px"><b>Transcribed response:</b></label>
-  <textarea id="answer" rows="5" placeholder="Click Start Speaking or type here…"></textarea>
+  <textarea id="answer" rows="9" placeholder="Click Start Speaking or type here…"></textarea>
   <div style="margin-top:8px">
    <button class="primary" id="startMic">Start Speaking</button>
    <button id="stopMic">Stop Speaking</button>
@@ -182,21 +206,22 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
  const postureEl=document.getElementById('posture'), visibilityEl=document.getElementById('visibility');
  const micStatus=document.getElementById('micStatus'), answer=document.getElementById('answer');
  const micPanel=document.getElementById('micPanel');
+ const postureBar=document.getElementById('postureBar'), postureBarLbl=document.getElementById('postureBarLbl');
  let stream=null, detector=null, recognition=null, finalText='';
 
  function send(){
-  const value={answer:answer.value,posture:postureEl.textContent,visibility:visibilityEl.textContent,camera_active:!!stream};
-  window.parent.postMessage({isStreamlitMessage:true,type:'streamlit:setComponentValue',value},'*');
+  const value={{answer:answer.value,posture:postureEl.textContent,visibility:visibilityEl.textContent,camera_active:!!stream}};
+  window.parent.postMessage({{isStreamlitMessage:true,type:'streamlit:setComponentValue',value}},'*');
  }
 
  async function loadPose(){
   try{
    const vision=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14');
    const files=await vision.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
-   detector=await vision.PoseLandmarker.createFromOptions(files,{
-    baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',delegate:'CPU'},
+   detector=await vision.PoseLandmarker.createFromOptions(files,{{
+    baseOptions:{{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',delegate:'CPU'}},
     runningMode:'VIDEO',numPoses:1
-   });
+   }});
    camStatus.textContent='Camera active — live pose analysis running.';
   }catch(e){camStatus.textContent='Pose model failed to load.';}
  }
@@ -211,18 +236,22 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
      const vis=Math.round((((ls.visibility??0)+(rs.visibility??0))/2)*100);
      visibilityEl.textContent=vis+'%';
      const shoulderTilt=Math.abs(ls.y-rs.y), headOffset=Math.abs(nose.x-(ls.x+rs.x)/2);
-     if(vis<45)postureEl.textContent='Move back so face/shoulders visible.';
-     else if(shoulderTilt>.09)postureEl.textContent='Shoulders uneven; adjust posture.';
-     else if(headOffset>.13)postureEl.textContent='Head off-center; face forward.';
-     else postureEl.textContent='Posture well-centered & balanced.';
+     let pScore = 85;
+     if(vis<45){postureEl.textContent='Move back so face/shoulders visible.'; pScore=50;}
+     else if(shoulderTilt>.09){postureEl.textContent='Shoulders uneven; adjust posture.'; pScore=65;}
+     else if(headOffset>.13){postureEl.textContent='Head off-center; face forward.'; pScore=70;}
+     else{postureEl.textContent='Posture well-centered & balanced.'; pScore=95;}
+     
+     postureBar.style.width = pScore + '%';
+     postureBarLbl.textContent = pScore;
     }else{postureEl.textContent='Person not detected clearly.';visibilityEl.textContent='Low';}
-   }catch(e){}
+   }catch(e){{}}
   }
   requestAnimationFrame(frame);
  }
 
  document.getElementById('startCam').onclick=async()=>{
-  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});video.srcObject=stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({{video:{{facingMode:'user'}},audio:false}});video.srcObject=stream;
    camStatus.textContent='Camera started. Loading pose model…';await loadPose();requestAnimationFrame(frame);send();}
   catch(e){camStatus.textContent='Camera permission denied.';}
  };
@@ -239,8 +268,8 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
     micStatus.innerHTML = '<span class="listening-badge"></span><strong>Listening… speak clearly.</strong>';
     micPanel.classList.add('mic-active-box');
    };
-   recognition.onerror = e => { micStatus.textContent = '❌ Error: ' + e.error; micPanel.classList.remove('mic-active-box'); };
-   recognition.onend = () => { micStatus.textContent = 'Microphone stopped listening.'; micPanel.classList.remove('mic-active-box'); send(); };
+   recognition.onerror = e => {{ micStatus.textContent = '❌ Error: ' + e.error; micPanel.classList.remove('mic-active-box'); }};
+   recognition.onend = () => {{ micStatus.textContent = 'Microphone stopped listening.'; micPanel.classList.remove('mic-active-box'); send(); }};
    recognition.onresult = e => {
     let interim = '';
     for(let i = e.resultIndex; i < e.results.length; i++){
@@ -265,89 +294,12 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
 </div>
 """
 
-with st.sidebar:
-    st.header("⚙️ User Profile")
-    st.write(f"**Name:** {st.session_state.user_name}")
-    st.write(f"**Email:** {st.session_state.user_email}")
-    st.write(f"**Role:** {st.session_state.target_role}")
-    st.write(f"**Level:** {st.session_state.experience_level}")
-    
-    use_ai = st.checkbox("Enable OpenAI Analytics", value=bool(os.getenv("OPENAI_API_KEY")))
-    
-    st.divider()
-    st.markdown("### 📈 Session Progress")
-    if "answers" in st.session_state and st.session_state.answers:
-        answered = len([a for a in st.session_state.answers if not a.get("passed", False)])
-        passed = len([a for a in st.session_state.answers if a.get("passed", False)])
-        st.metric("Attempted", answered)
-        st.metric("Passed", passed)
-    else:
-        st.metric("Attempted", 0)
-        st.metric("Passed", 0)
-        
-    st.divider()
-    if st.button("🚪 Logout / Switch Profile", use_container_width=True):
-        st.session_state.logged_in = False
-        st.session_state.answers = []
-        st.session_state.qidx = 0
-        st.rerun()
-
-if "qidx" not in st.session_state: st.session_state.qidx = 0
-if "answers" not in st.session_state: st.session_state.answers = []
-
-qs = QUESTIONS[st.session_state.target_role]
-st.session_state.qidx %= len(qs)
-
-# --- HIGHLIGHTED QUESTION PROMPT BANNER ---
-current_question = qs[st.session_state.qidx]
-st.markdown(f"""
-<div class="question-banner">
-    <div class="question-title">Question {st.session_state.qidx + 1} of {len(qs)} &bull; Profile: {st.session_state.target_role}</div>
-    <div class="question-text">{current_question}</div>
-</div>
-""", unsafe_allow_html=True)
-
-# --- STAR METHOD GUIDANCE ---
-with st.expander("💡 Guidance & Tips for Answering This Question (STAR Framework)", expanded=False):
-    st.markdown("""
-    * **Situation / Task**: Set the technical or professional context and state the core objective.
-    * **Action**: Explain the exact technical or strategic steps *you* personally executed.
-    * **Result**: Conclude with tangible outcomes, performance gains, metrics, or lessons learned.
-    * **Tip**: Keep your response concise, structured, and focused on your individual impact.
-    """)
-
-browser_data = components.html(COMPONENT_HTML, height=450, scrolling=True)
+browser_data = components.html(COMPONENT_HTML, height=540, scrolling=True)
 if not isinstance(browser_data, dict): 
     browser_data = {}
 
 answer = st.text_area("Your response (transcribed or typed manually)", value=browser_data.get("answer", ""), height=110, key="answer_box")
 posture = browser_data.get("posture", "Waiting for camera…")
-
-# --- LIVE CANDIDATURE METRICS (CONFIDENCE, SKILLS, POSTURE BARS) ---
-st.markdown("### 📊 Real-Time Candidate Analysis Indicators")
-col_m1, col_m2, col_m3 = st.columns(3)
-
-num_responses = len(st.session_state.answers)
-conf_score = min(95, max(50, 65 + (num_responses * 8)))
-skill_score = min(95, max(60, 70 + (num_responses * 7)))
-
-posture_score = 85
-if "uneven" in posture.lower() or "off-center" in posture.lower() or "move back" in posture.lower():
-    posture_score = 55
-elif "balanced" in posture.lower() or "centered" in posture.lower():
-    posture_score = 92
-
-with col_m1:
-    st.text(f"Confidence Level ({conf_score}%)")
-    st.progress(conf_score / 100.0)
-
-with col_m2:
-    st.text(f"Technical Skill Match ({skill_score}%)")
-    st.progress(skill_score / 100.0)
-
-with col_m3:
-    st.text(f"Posture & Stability ({posture_score}%)")
-    st.progress(posture_score / 100.0)
 
 def advanced_heuristic_feedback(text, posture_note, question=""):
     answer = (text or "").strip()
@@ -462,7 +414,7 @@ if st.session_state.answers:
 
     if valid_scores_list:
         avg_score = sum(valid_scores_list) / len(valid_scores_list)
-        selection_probability = int((avg_score * 0.70) + (posture_score * 0.15) + (85 * 0.15))
+        selection_probability = int((avg_score * 0.70) + (85 * 0.15) + (85 * 0.15))
     else:
         selection_probability = 40
 
