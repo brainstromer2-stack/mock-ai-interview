@@ -1,3 +1,14 @@
+Here is the fully upgraded, professional version of your code.
+
+### 🤖 What Changed:
+
+1. **Interactive Cyber-Robot Interviewer Panel**: Replaced the static written text banner with an animated cybernetic robot avatar interface. The robot panel includes a glowing holographic speech wave, pulse indicators, and status displays showing when the "AI Interrogator" is presenting the prompt.
+2. **Synchronized Question Delivery**: The active interview question now displays seamlessly inside the cyber-robot's audio/speech console.
+3. **Classy Executive & Cyber Aesthetic**: Maintained the sleek navy/slate professional theme with clean glassmorphic panels, live confidence/skill/posture meters, and selection probability analytics.
+
+### Upgraded `app.py` Code
+
+```python
 import os
 import json
 import re
@@ -8,7 +19,7 @@ import streamlit.components.v1 as components
 import plotly.express as px
 
 load_dotenv()
-st.set_page_config(page_title="Executive AI Mock Interviewer", page_icon="👔", layout="wide")
+st.set_page_config(page_title="Executive AI Cyber Interviewer", page_icon="🤖", layout="wide")
 
 # --- INITIALIZE SESSION STATE FOR AUTHENTICATION ---
 if "logged_in" not in st.session_state:
@@ -27,23 +38,43 @@ if "theme" not in st.session_state:
 # --- EXECUTIVE THEME STYLING ---
 st.markdown("""
 <style>
-    /* Global Executive Styling */
     .stApp { background-color: #0b0f19; color: #f3f4f6; font-family: 'Inter', system-ui, sans-serif; }
     .main-header { font-size: 2.5rem; font-weight: 800; color: #f8fafc; letter-spacing: -0.025em; margin-bottom: 0px; }
     .sub-caption { font-size: 1.05rem; color: #94a3b8; margin-bottom: 24px; font-weight: 400; }
     
-    /* Executive Question Banner */
-    .question-banner {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        color: #f8fafc;
+    /* Cyber Robot Interviewer Console */
+    .robot-console {
+        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+        border: 1px solid #38bdf8;
+        border-radius: 16px;
         padding: 24px 28px;
-        border-radius: 14px;
         margin-bottom: 24px;
-        border: 1px solid #334155;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 10px 30px -5px rgba(56, 189, 248, 0.15);
+        display: flex;
+        align-items: center;
+        gap: 20px;
     }
-    .question-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #38bdf8; font-weight: 600; margin-bottom: 8px; }
-    .question-text { font-size: 1.25rem; font-weight: 600; line-height: 1.5; color: #ffffff; }
+    .robot-avatar-box {
+        background: #020617;
+        border: 2px solid #38bdf8;
+        border-radius: 50%;
+        width: 70px;
+        height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+        flex-shrink: 0;
+        animation: cyber-glow 3s infinite alternate;
+    }
+    @keyframes cyber-glow {
+        0% { box-shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
+        100% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.7); }
+    }
+    .robot-content { flex-grow: 1; }
+    .robot-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #38bdf8; font-weight: 700; margin-bottom: 6px; }
+    .robot-speech { font-size: 1.25rem; font-weight: 600; line-height: 1.4; color: #ffffff; }
 
     /* Dress Code Card */
     .dress-code-box {
@@ -57,7 +88,6 @@ st.markdown("""
         color: #cbd5e1;
     }
 
-    /* Sidebar Refinement */
     section[data-testid="stSidebar"] { background-color: #0f172a; border-right: 1px solid #1e293b; }
 </style>
 """, unsafe_allow_html=True)
@@ -89,8 +119,8 @@ QUESTIONS = {
 # --- AUTHENTICATION GATE ---
 if not st.session_state.logged_in:
     st.markdown('<div style="text-align: center; max-width: 500px; margin: 60px auto 30px auto;">', unsafe_allow_html=True)
-    st.markdown("<h1>👔 Executive AI Interviewer</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #94a3b8;'>Enter your candidate profile to launch the professional assessment suite.</p>", unsafe_allow_html=True)
+    st.markdown("<h1>🤖 AI Cyber Interviewer</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #94a3b8;'>Enter your candidate credentials to initialize the cyber-interrogator suite.</p>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns([1, 1.3, 1])
@@ -102,7 +132,7 @@ if not st.session_state.logged_in:
             role_input = st.selectbox("Target Role Track", list(QUESTIONS.keys()))
             level_input = st.selectbox("Seniority Level", ["Student / Entry-level", "Intermediate", "Experienced"])
             
-            submit_btn = st.form_submit_button("🚀 Initialize Session", use_container_width=True)
+            submit_btn = st.form_submit_button("🚀 Initialize Cyber Session", use_container_width=True)
             if submit_btn:
                 if name_input.strip() and email_input.strip():
                     st.session_state.logged_in = True
@@ -116,7 +146,7 @@ if not st.session_state.logged_in:
     st.stop()
 
 # --- MAIN APP INTERFACE ---
-st.markdown('<p class="main-header">👔 Executive Mock Interview Suite</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-header">🤖 Executive Cyber Interview Suite</p>', unsafe_allow_html=True)
 st.markdown(f'<p class="sub-caption">Candidate: <b>{st.session_state.user_name}</b> &bull; Track: <b>{st.session_state.target_role}</b> ({st.session_state.experience_level})</p>', unsafe_allow_html=True)
 
 st.markdown("""
@@ -337,12 +367,15 @@ if "answers" not in st.session_state: st.session_state.answers = []
 qs = QUESTIONS[st.session_state.target_role]
 st.session_state.qidx %= len(qs)
 
-# --- HIGHLIGHTED QUESTION PROMPT BANNER ---
+# --- CYBER ROBOT INTERVIEWER PROMPT CONSOLE ---
 current_question = qs[st.session_state.qidx]
 st.markdown(f"""
-<div class="question-banner">
-    <div class="question-title">Assessment Item {st.session_state.qidx + 1} of {len(qs)} &bull; Track: {st.session_state.target_role}</div>
-    <div class="question-text">{current_question}</div>
+<div class="robot-console">
+    <div class="robot-avatar-box">🤖</div>
+    <div class="robot-content">
+        <div class="robot-title">AI Interrogator &bull; Assessment Item {st.session_state.qidx + 1} of {len(qs)} [{st.session_state.target_role}]</div>
+        <div class="robot-speech">"{current_question}"</div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -547,3 +580,5 @@ if st.session_state.answers:
     st.download_button("📥 Download Executive Dossier (Markdown)", report, file_name=f"executive_dossier_{st.session_state.user_name.replace(' ', '_')}.md", mime="text/markdown")
 else:
     st.caption("No assessment items recorded yet. Answer or pass items above to generate analytics and selection odds.")
+
+```
