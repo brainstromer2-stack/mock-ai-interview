@@ -8,7 +8,7 @@ import streamlit.components.v1 as components
 import plotly.express as px
 
 load_dotenv()
-st.set_page_config(page_title="AI Mock Interviewer Pro", page_icon="🎤", layout="wide")
+st.set_page_config(page_title="Executive AI Mock Interviewer", page_icon="👔", layout="wide")
 
 # --- INITIALIZE SESSION STATE FOR AUTHENTICATION ---
 if "logged_in" not in st.session_state:
@@ -22,41 +22,43 @@ if "target_role" not in st.session_state:
 if "experience_level" not in st.session_state:
     st.session_state.experience_level = "Intermediate"
 if "theme" not in st.session_state:
-    st.session_state.theme = "🌙 Dark Mode"
+    st.session_state.theme = "👔 Executive Midnight"
 
-# --- THEME STYLING CONFIGURATION ---
-theme_choice = st.sidebar.selectbox("🎨 Interface Theme", ["🌙 Dark Mode", "☀️ Light Mode", "💼 Corporate Executive"], index=0)
-st.session_state.theme = theme_choice
-
-if theme_choice == "🌙 Dark Mode":
-    bg_color, panel_bg, text_color, border_color, accent_color, card_bg = "#0e1117", "#161b22", "#f8fafc", "#30363d", "#2563eb", "#1f2937"
-elif theme_choice == "☀️ Light Mode":
-    bg_color, panel_bg, text_color, border_color, accent_color, card_bg = "#f8fafc", "#ffffff", "#0f172a", "#cbd5e1", "#2563eb", "#f1f5f9"
-else:  # Corporate Executive
-    bg_color, panel_bg, text_color, border_color, accent_color, card_bg = "#0f172a", "#1e293b", "#f1f5f9", "#334155", "#3b82f6", "#1e293b"
-
-st.markdown(f"""
+# --- EXECUTIVE THEME STYLING ---
+st.markdown("""
 <style>
-    .stApp {{ background-color: {bg_color}; color: {text_color}; }}
-    .main-header {{ font-size: 2.4rem; font-weight: 700; color: {accent_color}; margin-bottom: 0px; }}
-    .sub-caption {{ font-size: 1.05rem; opacity: 0.8; margin-bottom: 20px; }}
-    .question-banner {{
-        background: linear-gradient(135deg, {accent_color}, #1e40af);
-        color: #ffffff;
-        padding: 20px 24px;
-        border-radius: 12px;
+    /* Global Executive Styling */
+    .stApp { background-color: #0b0f19; color: #f3f4f6; font-family: 'Inter', system-ui, sans-serif; }
+    .main-header { font-size: 2.5rem; font-weight: 800; color: #f8fafc; letter-spacing: -0.025em; margin-bottom: 0px; }
+    .sub-caption { font-size: 1.05rem; color: #94a3b8; margin-bottom: 24px; font-weight: 400; }
+    
+    /* Executive Question Banner */
+    .question-banner {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        color: #f8fafc;
+        padding: 24px 28px;
+        border-radius: 14px;
+        margin-bottom: 24px;
+        border: 1px solid #334155;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+    .question-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #38bdf8; font-weight: 600; margin-bottom: 8px; }
+    .question-text { font-size: 1.25rem; font-weight: 600; line-height: 1.5; color: #ffffff; }
+
+    /* Dress Code Card */
+    .dress-code-box {
+        background: rgba(30, 41, 59, 0.7);
+        border: 1px solid #334155;
+        border-left: 4px solid #38bdf8;
+        padding: 14px 18px;
+        border-radius: 10px;
         margin-bottom: 20px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }}
-    .question-title {{ font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85; margin-bottom: 6px; }}
-    .question-text {{ font-size: 1.3rem; font-weight: 600; line-height: 1.4; }}
-    .dress-code-box {{
-        background: rgba(37, 99, 235, 0.1);
-        border: 1px dashed {accent_color};
-        padding: 12px 16px;
-        border-radius: 8px;
-        margin-bottom: 16px;
-    }}
+        font-size: 0.95rem;
+        color: #cbd5e1;
+    }
+
+    /* Sidebar Refinement */
+    section[data-testid="stSidebar"] { background-color: #0f172a; border-right: 1px solid #1e293b; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -86,21 +88,21 @@ QUESTIONS = {
 
 # --- AUTHENTICATION GATE ---
 if not st.session_state.logged_in:
-    st.markdown('<div style="text-align: center; margin-top: 30px;">', unsafe_allow_html=True)
-    st.markdown("<h1>🎤 Welcome to AI Mock Interviewer Pro</h1>", unsafe_allow_html=True)
-    st.markdown("<p>Sign up or log in to customize your interview profile and track your progress.</p>", unsafe_allow_html=True)
+    st.markdown('<div style="text-align: center; max-width: 500px; margin: 60px auto 30px auto;">', unsafe_allow_html=True)
+    st.markdown("<h1>👔 Executive AI Interviewer</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #94a3b8;'>Enter your candidate profile to launch the professional assessment suite.</p>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns([1, 1.2, 1])
+    col1, col2, col3 = st.columns([1, 1.3, 1])
     with col2:
         with st.form("login_form"):
-            st.subheader("Candidate Onboarding / Login")
-            name_input = st.text_input("Full Name", placeholder="e.g., Alex Johnson")
-            email_input = st.text_input("Email Address", placeholder="e.g., alex@example.com")
-            role_input = st.selectbox("Select Target Job Role", list(QUESTIONS.keys()))
-            level_input = st.selectbox("Experience Level", ["Student / Entry-level", "Intermediate", "Experienced"])
+            st.subheader("Candidate Credentials")
+            name_input = st.text_input("Full Name", placeholder="e.g., Victoria Sterling")
+            email_input = st.text_input("Email Address", placeholder="e.g., v.sterling@enterprise.com")
+            role_input = st.selectbox("Target Role Track", list(QUESTIONS.keys()))
+            level_input = st.selectbox("Seniority Level", ["Student / Entry-level", "Intermediate", "Experienced"])
             
-            submit_btn = st.form_submit_button("🚀 Start Interview Session", use_container_width=True)
+            submit_btn = st.form_submit_button("🚀 Initialize Session", use_container_width=True)
             if submit_btn:
                 if name_input.strip() and email_input.strip():
                     st.session_state.logged_in = True
@@ -110,36 +112,36 @@ if not st.session_state.logged_in:
                     st.session_state.experience_level = level_input
                     st.rerun()
                 else:
-                    st.warning("Please enter your name and email to proceed.")
+                    st.warning("Please provide your name and email to proceed.")
     st.stop()
 
 # --- MAIN APP INTERFACE ---
-st.markdown('<p class="main-header">🎤 AI Mock Interviewer Pro</p>', unsafe_allow_html=True)
-st.markdown(f'<p class="sub-caption">Candidate: <b>{st.session_state.user_name}</b> | Role: <b>{st.session_state.target_role}</b> ({st.session_state.experience_level})</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-header">👔 Executive Mock Interview Suite</p>', unsafe_allow_html=True)
+st.markdown(f'<p class="sub-caption">Candidate: <b>{st.session_state.user_name}</b> &bull; Track: <b>{st.session_state.target_role}</b> ({st.session_state.experience_level})</p>', unsafe_allow_html=True)
 
 st.markdown("""
 <div class="dress-code-box">
-    <b>👔 Professional Attire & Dress Code Tip:</b> 
-    Wearing formal or business-casual attire (collared shirt, blazer, or neat formal wear) significantly improves initial visual impressions, confidence scoring, and overall candidate selection odds.
+    <b>👔 Professional Presentation Note:</b> Formal business attire (collared shirt, blazer, or executive wear) and well-lit environments maximize your visual poise rating and executive selection probability score.
 </div>
 """, unsafe_allow_html=True)
 
-# --- COMBINED WEBCAM, LIVE METRICS & SPEECH COMPONENT ---
+# --- WEBCAM & SPEECH COMPONENT ---
 COMPONENT_HTML = """
 <div style="font-family:system-ui,sans-serif">
 <style>
-.panel-inner{border:1px solid #cbd5e1;border-radius:12px;padding:16px;margin-bottom:12px;background:rgba(255,255,255,0.02);box-shadow: 0 2px 4px rgba(0,0,0,0.05)}
-.row{display:flex;gap:16px;flex-wrap:wrap}.col{flex:1;min-width:280px}
-video{width:100%;max-height:190px;background:#0f172a;border-radius:8px;object-fit:cover}
-button{border:0;border-radius:8px;padding:8px 14px;margin:4px 4px 4px 0;cursor:pointer;background:#334155;color:#f8fafc;font-weight:600;transition: background 0.2s}
+.panel-inner{border:1px solid #334155;border-radius:14px;padding:18px;margin-bottom:12px;background:#0f172a;box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1)}
+.row{display:flex;gap:18px;flex-wrap:wrap}.col{flex:1;min-width:280px}
+video{width:100%;max-height:190px;background:#020617;border-radius:10px;object-fit:cover;border:1px solid #1e293b}
+button{border:0;border-radius:8px;padding:9px 15px;margin:4px 4px 4px 0;cursor:pointer;background:#334155;color:#f8fafc;font-weight:600;font-size:13px;transition: all 0.2s}
 button:hover{background:#475569}
 .primary{background:#2563eb;color:white}
 .primary:hover{background:#1d4ed8}
 .danger{background:#dc2626;color:white}
 .danger:hover{background:#b91c1c}
-.status{font-size:12px;padding:4px 0;font-weight:500}
-.live-badge{background:#0284c7;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;display:inline-block;margin-bottom:6px}
-textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:10px;font:inherit;background:rgba(0,0,0,0.1);color:inherit}
+.status{font-size:12px;padding:4px 0;color:#94a3b8;font-weight:500}
+.live-badge{background:#0284c7;color:#fff;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;display:inline-block;margin-bottom:8px;letter-spacing:0.025em}
+textarea{width:100%;box-sizing:border-box;border:1px solid #334155;border-radius:10px;padding:12px;font:inherit;background:#020617;color:#f8fafc;font-size:14px}
+textarea:focus{outline:none;border-color:#38bdf8}
 .listening-badge {
   display: inline-block; width: 9px; height: 9px; border-radius: 50%; background-color: #ef4444; margin-right: 6px;
   animation: pulse 1.5s infinite;
@@ -149,28 +151,28 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
   70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
-.mic-active-box { border: 2px solid #ef4444 !important; background: rgba(239, 68, 68, 0.05) !important; }
-.indicator-bar-container { margin-top: 6px; font-size: 11px; }
-.bar-track { background: #334155; border-radius: 4px; height: 7px; width: 100%; margin-top: 2px; overflow: hidden; }
-.bar-fill { background: #38bdf8; height: 100%; border-radius: 4px; }
+.mic-active-box { border: 2px solid #ef4444 !important; background: rgba(239, 68, 68, 0.03) !important; }
+.indicator-bar-container { margin-top: 8px; font-size: 11px; color: #cbd5e1; font-weight: 500; }
+.bar-track { background: #1e293b; border-radius: 6px; height: 7px; width: 100%; margin-top: 3px; overflow: hidden; }
+.bar-fill { background: #38bdf8; height: 100%; border-radius: 6px; transition: width 0.3s ease; }
 </style>
 <div class="row">
  <div class="col panel-inner">
-  <div class="live-badge">LIVE CAMERA & CANDIDATURE HUD</div>
+  <div class="live-badge">LIVE CAMERA & POISE HUD</div>
   <video id="video" autoplay playsinline muted></video>
-  <div id="camStatus" class="status">Camera not started.</div>
+  <div id="camStatus" class="status">Camera standby.</div>
   
-  <div style="font-size:12px; margin-top:4px; background:rgba(0,0,0,0.15); padding:6px 8px; border-radius:6px;">
-   <b>Posture:</b> <span id="posture" style="color:#38bdf8">Waiting for camera…</span><br>
+  <div style="font-size:12px; margin-top:6px; background:#020617; padding:8px 10px; border-radius:8px; border:1px solid #1e293b; color:#cbd5e1;">
+   <b>Posture:</b> <span id="posture" style="color:#38bdf8">Awaiting video feed…</span><br>
    <b>Visibility:</b> <span id="visibility">—</span>
   </div>
 
   <div class="indicator-bar-container">
-    <div>Confidence Level (<span id="confLbl">65</span>%)</div>
+    <div>Confidence Index (<span id="confLbl">65</span>%)</div>
     <div class="bar-track"><div class="bar-fill" id="confBar" style="width: 65%;"></div></div>
   </div>
   <div class="indicator-bar-container">
-    <div>Technical Skill Match (<span id="skillLbl">70</span>%)</div>
+    <div>Technical Alignment (<span id="skillLbl">70</span>%)</div>
     <div class="bar-track"><div class="bar-fill" id="skillBar" style="width: 70%; background: #4ade80;"></div></div>
   </div>
   <div class="indicator-bar-container">
@@ -178,19 +180,19 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
     <div class="bar-track"><div class="bar-fill" id="postureBar" style="width: 85%; background: #facc15;"></div></div>
   </div>
 
-  <div style="margin-top:8px">
-   <button class="primary" id="startCam">Start Cam</button>
-   <button class="danger" id="stopCam">Stop Cam</button>
+  <div style="margin-top:12px">
+   <button class="primary" id="startCam">Start Camera</button>
+   <button class="danger" id="stopCam">Stop</button>
   </div>
  </div>
  <div class="col panel-inner" id="micPanel">
-  <div class="live-badge" style="background:#059669">MICROPHONE TRANSCRIPT</div>
-  <div id="micStatus" class="status">Microphone idle.</div>
-  <label style="display:block;margin-top:4px"><b>Transcribed response:</b></label>
-  <textarea id="answer" rows="9" placeholder="Click Start Speaking or type here…"></textarea>
-  <div style="margin-top:8px">
+  <div class="live-badge" style="background:#059669">SPEECH TRANSCRIPTION</div>
+  <div id="micStatus" class="status">Microphone standby.</div>
+  <label style="display:block;margin-top:4px;font-size:13px;color:#cbd5e1"><b>Response Transcript:</b></label>
+  <textarea id="answer" rows="10" placeholder="Click 'Start Speaking' or type your response here…"></textarea>
+  <div style="margin-top:12px">
    <button class="primary" id="startMic">Start Speaking</button>
-   <button id="stopMic">Stop Speaking</button>
+   <button id="stopMic">Stop</button>
   </div>
  </div>
 </div>
@@ -218,8 +220,8 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
     baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',delegate:'CPU'},
     runningMode:'VIDEO',numPoses:1
    });
-   camStatus.textContent='Camera active — live pose analysis running.';
-  }catch(e){camStatus.textContent='Pose model failed to load.';}
+   camStatus.textContent='Active — Pose analytics online.';
+  }catch(e){camStatus.textContent='Failed to initialize pose model.';}
  }
 
  function frame(now){
@@ -233,10 +235,10 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
      visibilityEl.textContent=vis+'%';
      const shoulderTilt=Math.abs(ls.y-rs.y), headOffset=Math.abs(nose.x-(ls.x+rs.x)/2);
      let pScore = 85;
-     if(vis<45){postureEl.textContent='Move back so face/shoulders visible.'; pScore=50;}
-     else if(shoulderTilt>.09){postureEl.textContent='Shoulders uneven; adjust posture.'; pScore=65;}
+     if(vis<45){postureEl.textContent='Step back for optimal framing.'; pScore=50;}
+     else if(shoulderTilt>.09){postureEl.textContent='Shoulder alignment uneven.'; pScore=65;}
      else if(headOffset>.13){postureEl.textContent='Head off-center; face forward.'; pScore=70;}
-     else{postureEl.textContent='Posture well-centered & balanced.'; pScore=95;}
+     else{postureEl.textContent='Optimal posture & centering.'; pScore=95;}
      
      postureBar.style.width = pScore + '%';
      postureBarLbl.textContent = pScore;
@@ -250,32 +252,32 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
      skillBar.style.width = sScore + '%';
      skillLbl.textContent = sScore;
 
-    }else{postureEl.textContent='Person not detected clearly.';visibilityEl.textContent='Low';}
+    }else{postureEl.textContent='Candidate not detected clearly.';visibilityEl.textContent='Low';}
    }catch(e){}
   }
   requestAnimationFrame(frame);
  }
 
  document.getElementById('startCam').onclick=async()=>{
-  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});video.srcObject=stream;
-   camStatus.textContent='Camera started. Loading pose model…';await loadPose();requestAnimationFrame(frame);send();}
+  try{stream=window.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});video.srcObject=stream;
+   camStatus.textContent='Initializing pose telemetry…';await loadPose();requestAnimationFrame(frame);send();}
   catch(e){camStatus.textContent='Camera permission denied.';}
  };
 
- document.getElementById('stopCam').onclick=()=>{if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;postureEl.textContent='Camera stopped.';visibilityEl.textContent='—';camStatus.textContent='Camera stopped.';send();};
+ document.getElementById('stopCam').onclick=()=>{if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;postureEl.textContent='Camera offline.';visibilityEl.textContent='—';camStatus.textContent='Camera stopped.';send();};
 
  document.getElementById('startMic').onclick=()=>{
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){ micStatus.innerHTML = '⚠️ Speech recognition unsupported. Type answer below.'; return; }
+  if(!SR){ micStatus.innerHTML = '⚠️ Speech recognition unsupported. Type below.'; return; }
   try {
    recognition = new SR(); recognition.continuous = true; recognition.interimResults = true; recognition.lang = 'en-US';
    finalText = answer.value ? answer.value + ' ' : '';
    recognition.onstart = () => {
-    micStatus.innerHTML = '<span class="listening-badge"></span><strong>Listening… speak clearly.</strong>';
+    micStatus.innerHTML = '<span class="listening-badge"></span><strong>Recording… articulate clearly.</strong>';
     micPanel.classList.add('mic-active-box');
    };
    recognition.onerror = e => { micStatus.textContent = '❌ Error: ' + e.error; micPanel.classList.remove('mic-active-box'); };
-   recognition.onend = () => { micStatus.textContent = 'Microphone stopped listening.'; micPanel.classList.remove('mic-active-box'); send(); };
+   recognition.onend = () => { micStatus.textContent = 'Microphone recording halted.'; micPanel.classList.remove('mic-active-box'); send(); };
    recognition.onresult = e => {
     let interim = '';
     for(let i = e.resultIndex; i < e.results.length; i++){
@@ -285,13 +287,13 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
     answer.value = (finalText + interim).trim(); send();
    };
    recognition.start();
-  } catch(err) { micStatus.textContent = 'Failed to start mic: ' + err.message; }
+  } catch(err) { micStatus.textContent = 'Mic initialization failed: ' + err.message; }
  };
 
  document.getElementById('stopMic').onclick = () => {
   if(recognition) recognition.stop();
   micPanel.classList.remove('mic-active-box');
-  micStatus.textContent = 'Microphone stopped.';
+  micStatus.textContent = 'Microphone standby.';
  };
 
  answer.addEventListener('input', send);
@@ -301,16 +303,18 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
 """
 
 with st.sidebar:
-    st.header("⚙️ User Profile")
-    st.write(f"**Name:** {st.session_state.user_name}")
-    st.write(f"**Email:** {st.session_state.user_email}")
-    st.write(f"**Role:** {st.session_state.target_role}")
-    st.write(f"**Level:** {st.session_state.experience_level}")
+    st.header("👔 Executive Profile")
+    st.markdown(f"""
+    * **Name:** {st.session_state.user_name}
+    * **Email:** {st.session_state.user_email}
+    * **Track:** {st.session_state.target_role}
+    * **Level:** {st.session_state.experience_level}
+    """)
     
-    use_ai = st.checkbox("Enable OpenAI Analytics", value=bool(os.getenv("OPENAI_API_KEY")))
+    use_ai = st.checkbox("Enable GPT-4o Analytics", value=bool(os.getenv("OPENAI_API_KEY")))
     
     st.divider()
-    st.markdown("### 📈 Session Progress")
+    st.markdown("### 📊 Session Progress")
     if "answers" in st.session_state and st.session_state.answers:
         answered = len([a for a in st.session_state.answers if not a.get("passed", False)])
         passed = len([a for a in st.session_state.answers if a.get("passed", False)])
@@ -321,7 +325,7 @@ with st.sidebar:
         st.metric("Passed", 0)
         
     st.divider()
-    if st.button("🚪 Logout / Switch Profile", use_container_width=True):
+    if st.button("🚪 End Session & Switch", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.answers = []
         st.session_state.qidx = 0
@@ -337,26 +341,26 @@ st.session_state.qidx %= len(qs)
 current_question = qs[st.session_state.qidx]
 st.markdown(f"""
 <div class="question-banner">
-    <div class="question-title">Question {st.session_state.qidx + 1} of {len(qs)} &bull; Profile: {st.session_state.target_role}</div>
+    <div class="question-title">Assessment Item {st.session_state.qidx + 1} of {len(qs)} &bull; Track: {st.session_state.target_role}</div>
     <div class="question-text">{current_question}</div>
 </div>
 """, unsafe_allow_html=True)
 
 # --- STAR METHOD GUIDANCE ---
-with st.expander("💡 Guidance & Tips for Answering This Question (STAR Framework)", expanded=False):
+with st.expander("💡 Executive Response Framework (STAR Method)", expanded=False):
     st.markdown("""
-    * **Situation / Task**: Set the technical or professional context and state the core objective.
-    * **Action**: Explain the exact technical or strategic steps *you* personally executed.
-    * **Result**: Conclude with tangible outcomes, performance gains, metrics, or lessons learned.
-    * **Tip**: Keep your response concise, structured, and focused on your individual impact.
+    * **Situation / Task**: Outline the operational context, business challenge, or technical constraints.
+    * **Action**: Detail your specific strategic ownership, architecture decisions, or execution steps.
+    * **Result**: Highlight quantifiable business impact, performance metrics, or key lessons learned.
+    * **Tip**: Maintain structured pacing between 75 to 130 words.
     """)
 
 browser_data = components.html(COMPONENT_HTML, height=540, scrolling=True)
 if not isinstance(browser_data, dict): 
     browser_data = {}
 
-answer = st.text_area("Your response (transcribed or typed manually)", value=browser_data.get("answer", ""), height=110, key="answer_box")
-posture = browser_data.get("posture", "Waiting for camera…")
+answer = st.text_area("Your response (transcribed or edited manually)", value=browser_data.get("answer", ""), height=110, key="answer_box")
+posture = browser_data.get("posture", "Awaiting video feed…")
 
 def advanced_heuristic_feedback(text, posture_note, question=""):
     answer = (text or "").strip()
@@ -366,29 +370,29 @@ def advanced_heuristic_feedback(text, posture_note, question=""):
     improvements, strengths = [], []
 
     if words < 12:
-        strengths.append("Quick opening.")
-        improvements.append(f"Your answer contains only {words} words. Elaborate with specifics on your role and outcome.")
+        strengths.append("Direct initial premise.")
+        improvements.append(f"Response is concise ({words} words). Elaborate further on your personal contribution and business outcome.")
     elif words < 35:
-        strengths.append("Concise delivery.")
-        improvements.append("Add a concrete example or metric to substantiate your professional claim.")
+        strengths.append("Clear delivery.")
+        improvements.append("Include specific technical metrics or project milestones to strengthen your assertion.")
     elif words <= 140:
-        strengths.append("Solid depth and pacing.")
+        strengths.append("Excellent professional depth and pacing.")
     else:
-        strengths.append("Thorough explanation.")
-        improvements.append("Trim minor tangents to keep the focus tight on core milestones.")
+        strengths.append("Comprehensive coverage.")
+        improvements.append("Streamline minor tangents to keep stakeholder focus on core achievements.")
 
     has_situation = any(term in lower for term in ["when", "project", "role", "time", "company", "team", "background", "designed", "built"])
     has_action = any(term in lower for term in ["led", "developed", "created", "analyzed", "handled", "implemented", "resolved", "prioritized"])
     has_result = any(term in lower for term in ["result", "outcome", "improved", "reduced", "increased", "learned", "successfully", "delivered", "metric"])
 
     if has_situation: strengths.append("Successfully established context.")
-    else: improvements.append("Start by clearly stating the context or challenge you encountered.")
+    else: improvements.append("Open by articulating the underlying context or challenge.")
 
-    if has_action: strengths.append("Demonstrated personal ownership with active verbs.")
-    else: improvements.append("Explicitly state the exact steps *you* performed.")
+    if has_action: strengths.append("Demonstrated direct ownership with active terminology.")
+    else: improvements.append("Explicitly state the exact steps *you* spearheaded.")
 
-    if has_result: strengths.append("Concluded with an effective outcome or takeaway.")
-    else: improvements.append("Wrap up by highlighting the measurable result or lesson learned.")
+    if has_result: strengths.append("Concluded effectively with a tangible outcome.")
+    else: improvements.append("Summarize with a quantifiable business result or takeaway.")
 
     score = 50 + min(words, 70) // 3 + (12 if has_situation else 0) + (13 if has_action else 0) + (12 if has_result else 0)
     if words < 12: score -= 12
@@ -398,12 +402,12 @@ def advanced_heuristic_feedback(text, posture_note, question=""):
         "score": score, 
         "strengths": strengths, 
         "improvements": improvements,
-        "sample_tip": "Remember: Situation -> Action -> Measurable Result."
+        "sample_tip": "Structure: Situation -> Strategic Action -> Quantifiable Result."
     }
 
 def get_ai_feedback(text, question):
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    prompt = f"""Review this interview answer constructively as an expert hiring manager for a {st.session_state.target_role} role ({st.session_state.experience_level}).
+    prompt = f"""Review this interview answer constructively as an executive hiring director for a {st.session_state.target_role} role ({st.session_state.experience_level}).
 Candidate Name: {st.session_state.user_name}
 Question: {question}
 Answer: {text}
@@ -413,7 +417,7 @@ Return valid JSON with:
 - strengths (array of unique strings specific to this answer)
 - improvements (array of unique actionable suggestions)
 - sample_tip (string)
-Evaluate content, clarity, structure, and professional relevance."""
+Evaluate content, clarity, strategic structure, and professional relevance."""
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "system", "content": "Return only valid JSON."}, {"role": "user", "content": prompt}],
@@ -425,34 +429,34 @@ Evaluate content, clarity, structure, and professional relevance."""
 # Action Buttons
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    if st.button("💾 Save Answer", type="primary", use_container_width=True):
+    if st.button("💾 Save Response", type="primary", use_container_width=True):
         if answer.strip():
             st.session_state.answers.append({"question": current_question, "answer": answer.strip(), "posture": posture, "passed": False})
-            st.success("Answer saved successfully!")
+            st.success("Response securely saved.")
         else: 
-            st.warning("Please record or type an answer first.")
+            st.warning("Please record or input a response first.")
 with col2:
-    if st.button("⏭️ Pass / Skip", use_container_width=True):
+    if st.button("⏭️ Skip Item", use_container_width=True):
         st.session_state.answers.append({"question": current_question, "answer": "[Passed / Skipped]", "posture": posture, "passed": True})
-        st.info("Question skipped and logged.")
+        st.info("Item marked as passed.")
         st.session_state.qidx = (st.session_state.qidx + 1) % len(qs)
         st.rerun()
 with col3:
-    if st.button("➡️ Next Question", use_container_width=True):
+    if st.button("➡️ Next Item", use_container_width=True):
         if answer.strip(): 
             st.session_state.answers.append({"question": current_question, "answer": answer.strip(), "posture": posture, "passed": False})
         st.session_state.qidx = (st.session_state.qidx + 1) % len(qs)
         st.rerun()
 with col4:
-    if st.button("🔄 Reset Session", use_container_width=True):
+    if st.button("🔄 Reset Suite", use_container_width=True):
         st.session_state.answers = []
         st.session_state.qidx = 0
         st.rerun()
 
 st.divider()
 
-# --- ANALYTICS & SAVED ANSWERS WITH SELECTION PROBABILITY ---
-st.header("📊 Performance Analytics & Selection Odds")
+# --- ANALYTICS & SELECTION ODDS ---
+st.header("📊 Executive Performance & Selection Analytics")
 
 if st.session_state.answers:
     scores, labels = [], []
@@ -475,72 +479,71 @@ if st.session_state.answers:
     else:
         selection_probability = 40
 
-    st.markdown("### 🎯 Estimated Candidate Selection Odds")
+    st.markdown("### 🎯 Estimated Candidature Selection Probability")
     sp_col1, sp_col2 = st.columns([1, 2])
     with sp_col1:
-        st.metric("Probability of Offer/Selection", f"{selection_probability}%", delta="High Fit" if selection_probability > 75 else "Moderate Fit")
+        st.metric("Offer Probability", f"{selection_probability}%", delta="Top Tier Fit" if selection_probability > 75 else "Developing Fit")
     with sp_col2:
         if selection_probability >= 80:
-            st.success("🟢 **Strong Hire Recommendation**: High alignment in technical depth, STAR structure, posture stability, and professional attire.")
+            st.success("🟢 **Executive Recommendation**: High candidacy alignment across technical competence, structural articulation, and poise.")
         elif selection_probability >= 65:
-            st.warning("🟡 **Moderate Hire Recommendation**: Solid foundation. Enhance specific project metrics and maintain consistent upright posture.")
+            st.warning("🟡 **Conditional Recommendation**: Solid foundation. Refine quantitative metrics and maintain consistent vertical posture.")
         else:
-            st.error("🔴 **Needs Improvement**: Expand answer detail, practice STAR framework, and ensure formal professional presentation.")
+            st.error("🔴 **Development Required**: Expand response depth, apply structured STAR method, and ensure formal presentation standards.")
 
     st.divider()
 
     if scores:
         fig = px.bar(
             x=labels, y=scores, 
-            labels={"x": "Interview Question", "y": "Performance Score (/100)"},
-            title=f"Session Score Progression for {st.session_state.user_name}",
-            color=scores, color_continuous_scale="Viridis"
+            labels={"x": "Assessment Item", "y": "Performance Score (/100)"},
+            title=f"Score Progression: {st.session_state.user_name}",
+            color=scores, color_continuous_scale="Blues"
         )
-        fig.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(color=text_color))
+        fig.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(color="#f3f4f6"))
         st.plotly_chart(fig, use_container_width=True)
 
     for i, item in enumerate(st.session_state.answers, 1):
         with st.expander(f"Question {i}: {item['question']} {'[PASSED]' if item.get('passed') else ''}"):
-            st.markdown(f"**Recorded Answer:** {item['answer']}")
-            st.markdown(f"**Posture Note Recorded:** {item.get('posture', 'Unavailable')}")
+            st.markdown(f"**Candidate Response:** {item['answer']}")
+            st.markdown(f"**Posture Telemetry:** {item.get('posture', 'Unavailable')}")
             
             if not item.get("passed", False):
-                if st.button(f"Generate Detailed Feedback (Q{i})", key=f"feedback_{i}", type="secondary"):
+                if st.button(f"Generate Detailed Evaluation (Q{i})", key=f"feedback_{i}", type="secondary"):
                     try:
-                        with st.spinner("Analyzing communication depth & profile relevance..."):
+                        with st.spinner("Analyzing competency matrix…"):
                             fb = get_ai_feedback(item["answer"], item["question"]) if use_ai and os.getenv("OPENAI_API_KEY") else advanced_heuristic_feedback(item["answer"], item.get("posture", ""), item["question"])
                         
                         m1, m2 = st.columns(2)
                         with m1:
-                            st.metric("Score", f"{fb.get('score', 0)} / 100")
+                            st.metric("Evaluation Score", f"{fb.get('score', 0)} / 100")
                         with m2:
-                            st.info(f"**Coaching Tip:** {fb.get('sample_tip', '')}")
+                            st.info(f"**Coaching Directive:** {fb.get('sample_tip', '')}")
 
-                        st.subheader("✅ Key Strengths")
+                        st.subheader("✅ Core Strengths")
                         for s in fb.get("strengths", []):
                             st.markdown(f"- {s}")
 
-                        st.subheader("🔧 Areas for Improvement")
+                        st.subheader("🔧 Areas for Optimization")
                         for imp in fb.get("improvements", []):
                             st.markdown(f"- {imp}")
 
                     except Exception as e:
-                        st.error(f"Feedback generation failed: {e}")
+                        st.error(f"Evaluation failed: {e}")
             else:
-                st.info("Passed question — no evaluation required.")
+                st.info("Item skipped — no evaluation generated.")
 
     st.divider()
-    report = f"# AI Mock Interview Executive Summary & Selection Odds\n\n"
-    report += f"**Candidate Name:** {st.session_state.user_name}\n"
-    report += f"**Email:** {st.session_state.user_email}\n"
-    report += f"**Target Role:** {st.session_state.target_role} ({st.session_state.experience_level})\n"
+    report = f"# Executive Interview Performance & Selection Dossier\n\n"
+    report += f"**Candidate:** {st.session_state.user_name} ({st.session_state.user_email})\n"
+    report += f"**Track:** {st.session_state.target_role} ({st.session_state.experience_level})\n"
     report += f"**Estimated Selection Probability:** {selection_probability}%\n\n"
-    report += "## Session Breakdown\n"
+    report += "## Assessment Transcript\n"
 
     for i, item in enumerate(st.session_state.answers, 1):
         status = "PASSED" if item.get("passed") else "ATTEMPTED"
-        report += f"### Question {i} ({status})\n**Prompt:** {item['question']}\n\n**Response:**\n{item['answer']}\n\n**Posture Cue:** {item.get('posture', 'N/A')}\n\n---\n"
+        report += f"### Item {i} ({status})\n**Prompt:** {item['question']}\n\n**Response:**\n{item['answer']}\n\n**Posture Status:** {item.get('posture', 'N/A')}\n\n---\n"
     
-    st.download_button("📥 Download Comprehensive Markdown Report", report, file_name=f"interview_report_{st.session_state.user_name.replace(' ', '_')}.md", mime="text/markdown")
+    st.download_button("📥 Download Executive Dossier (Markdown)", report, file_name=f"executive_dossier_{st.session_state.user_name.replace(' ', '_')}.md", mime="text/markdown")
 else:
-    st.caption("No answers recorded yet. Answer or pass questions above to view analytics and selection odds.")
+    st.caption("No assessment items recorded yet. Answer or pass items above to generate analytics and selection odds.")
