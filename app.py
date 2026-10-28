@@ -84,7 +84,7 @@ QUESTIONS = {
     ]
 }
 
-# --- AUTHENTICATION GATE (LOGIN / SIGNUP) ---
+# --- AUTHENTICATION GATE ---
 if not st.session_state.logged_in:
     st.markdown('<div style="text-align: center; margin-top: 30px;">', unsafe_allow_html=True)
     st.markdown("<h1>🎤 Welcome to AI Mock Interviewer Pro</h1>", unsafe_allow_html=True)
@@ -117,7 +117,6 @@ if not st.session_state.logged_in:
 st.markdown('<p class="main-header">🎤 AI Mock Interviewer Pro</p>', unsafe_allow_html=True)
 st.markdown(f'<p class="sub-caption">Candidate: <b>{st.session_state.user_name}</b> | Role: <b>{st.session_state.target_role}</b> ({st.session_state.experience_level})</p>', unsafe_allow_html=True)
 
-# --- DRESS CODE NOTICE ---
 st.markdown("""
 <div class="dress-code-box">
     <b>👔 Professional Attire & Dress Code Tip:</b> 
@@ -125,23 +124,24 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# --- WEBCAM & SPEECH COMPONENT ---
+# --- COMBINED WEBCAM, LIVE METRICS & SPEECH COMPONENT ---
 COMPONENT_HTML = """
 <div style="font-family:system-ui,sans-serif">
 <style>
 .panel-inner{border:1px solid #cbd5e1;border-radius:12px;padding:16px;margin-bottom:12px;background:rgba(255,255,255,0.02);box-shadow: 0 2px 4px rgba(0,0,0,0.05)}
 .row{display:flex;gap:16px;flex-wrap:wrap}.col{flex:1;min-width:280px}
-video{width:100%;max-height:240px;background:#0f172a;border-radius:8px;object-fit:cover}
-button{border:0;border-radius:8px;padding:10px 16px;margin:6px 6px 6px 0;cursor:pointer;background:#334155;color:#f8fafc;font-weight:600;transition: background 0.2s}
+video{width:100%;max-height:220px;background:#0f172a;border-radius:8px;object-fit:cover}
+button{border:0;border-radius:8px;padding:8px 14px;margin:4px 4px 4px 0;cursor:pointer;background:#334155;color:#f8fafc;font-weight:600;transition: background 0.2s}
 button:hover{background:#475569}
 .primary{background:#2563eb;color:white}
 .primary:hover{background:#1d4ed8}
 .danger{background:#dc2626;color:white}
 .danger:hover{background:#b91c1c}
-.status{font-size:13px;padding:6px 0;font-weight:500}
-textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:12px;font:inherit;background:rgba(0,0,0,0.1);color:inherit}
+.status{font-size:12px;padding:4px 0;font-weight:500}
+.live-badge{background:#0284c7;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;display:inline-block;margin-bottom:6px}
+textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:10px;font:inherit;background:rgba(0,0,0,0.1);color:inherit}
 .listening-badge {
-  display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #ef4444; margin-right: 6px;
+  display: inline-block; width: 9px; height: 9px; border-radius: 50%; background-color: #ef4444; margin-right: 6px;
   animation: pulse 1.5s infinite;
 }
 @keyframes pulse {
@@ -153,21 +153,27 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
 </style>
 <div class="row">
  <div class="col panel-inner">
-  <h3>📷 Live Posture & Attire Monitor</h3>
+  <div class="live-badge">LIVE CAMERA FEED & HUD</div>
   <video id="video" autoplay playsinline muted></video>
   <div id="camStatus" class="status">Camera not started.</div>
-  <b>Posture cue:</b> <span id="posture" style="color:#38bdf8">Waiting for camera…</span><br>
-  <b>Shoulder visibility:</b> <span id="visibility">—</span><br><br>
-  <button class="primary" id="startCam">Start camera</button>
-  <button class="danger" id="stopCam">Stop camera</button>
+  <div style="font-size:13px; margin-top:6px; background:rgba(0,0,0,0.15); padding:8px; border-radius:6px;">
+   <b>Posture Cue:</b> <span id="posture" style="color:#38bdf8">Waiting for camera…</span><br>
+   <b>Shoulder Visibility:</b> <span id="visibility">—</span>
+  </div>
+  <div style="margin-top:8px">
+   <button class="primary" id="startCam">Start Cam</button>
+   <button class="danger" id="stopCam">Stop Cam</button>
+  </div>
  </div>
  <div class="col panel-inner" id="micPanel">
-  <h3>🎙️ Speech Transcript</h3>
+  <div class="live-badge" style="background:#059669">MICROPHONE TRANSCRIPT</div>
   <div id="micStatus" class="status">Microphone idle.</div>
-  <button class="primary" id="startMic">Start speaking</button>
-  <button id="stopMic">Stop speaking</button>
-  <label style="display:block;margin-top:8px"><b>Transcribed answer (editable):</b></label>
-  <textarea id="answer" rows="6" placeholder="Click 'Start speaking' or type your response here…"></textarea>
+  <label style="display:block;margin-top:4px"><b>Transcribed response:</b></label>
+  <textarea id="answer" rows="5" placeholder="Click Start Speaking or type here…"></textarea>
+  <div style="margin-top:8px">
+   <button class="primary" id="startMic">Start Speaking</button>
+   <button id="stopMic">Stop Speaking</button>
+  </div>
  </div>
 </div>
 <script>
@@ -205,10 +211,10 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
      const vis=Math.round((((ls.visibility??0)+(rs.visibility??0))/2)*100);
      visibilityEl.textContent=vis+'%';
      const shoulderTilt=Math.abs(ls.y-rs.y), headOffset=Math.abs(nose.x-(ls.x+rs.x)/2);
-     if(vis<45)postureEl.textContent='Move back so face and shoulders are visible.';
-     else if(shoulderTilt>.09)postureEl.textContent='Shoulders appear uneven; adjust posture.';
-     else if(headOffset>.13)postureEl.textContent='Head appears off-center; face forward.';
-     else postureEl.textContent='Posture is well-centered and balanced.';
+     if(vis<45)postureEl.textContent='Move back so face/shoulders visible.';
+     else if(shoulderTilt>.09)postureEl.textContent='Shoulders uneven; adjust posture.';
+     else if(headOffset>.13)postureEl.textContent='Head off-center; face forward.';
+     else postureEl.textContent='Posture well-centered & balanced.';
     }else{postureEl.textContent='Person not detected clearly.';visibilityEl.textContent='Low';}
    }catch(e){}
   }
@@ -225,44 +231,26 @@ textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius
 
  document.getElementById('startMic').onclick=()=>{
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){
-   micStatus.innerHTML = '⚠️ Speech recognition unsupported. Please use Chrome/Edge or type your answer.';
-   return;
-  }
+  if(!SR){ micStatus.innerHTML = '⚠️ Speech recognition unsupported. Type answer below.'; return; }
   try {
-   recognition = new SR();
-   recognition.continuous = true;
-   recognition.interimResults = true;
-   recognition.lang = 'en-US';
+   recognition = new SR(); recognition.continuous = true; recognition.interimResults = true; recognition.lang = 'en-US';
    finalText = answer.value ? answer.value + ' ' : '';
-
    recognition.onstart = () => {
-    micStatus.innerHTML = '<span class="listening-badge"></span><strong>Listening… speak clearly into your microphone.</strong>';
+    micStatus.innerHTML = '<span class="listening-badge"></span><strong>Listening… speak clearly.</strong>';
     micPanel.classList.add('mic-active-box');
    };
-   recognition.onerror = e => {
-    micStatus.textContent = '❌ Microphone error: ' + e.error;
-    micPanel.classList.remove('mic-active-box');
-   };
-   recognition.onend = () => {
-    micStatus.textContent = 'Microphone stopped listening.';
-    micPanel.classList.remove('mic-active-box');
-    send();
-   };
+   recognition.onerror = e => { micStatus.textContent = '❌ Error: ' + e.error; micPanel.classList.remove('mic-active-box'); };
+   recognition.onend = () => { micStatus.textContent = 'Microphone stopped listening.'; micPanel.classList.remove('mic-active-box'); send(); };
    recognition.onresult = e => {
     let interim = '';
     for(let i = e.resultIndex; i < e.results.length; i++){
      let t = e.results[i][0].transcript;
-     if(e.results[i].isFinal) finalText += t + ' ';
-     else interim += t;
+     if(e.results[i].isFinal) finalText += t + ' '; else interim += t;
     }
-    answer.value = (finalText + interim).trim();
-    send();
+    answer.value = (finalText + interim).trim(); send();
    };
    recognition.start();
-  } catch(err) {
-   micStatus.textContent = 'Failed to start microphone: ' + err.message;
-  }
+  } catch(err) { micStatus.textContent = 'Failed to start mic: ' + err.message; }
  };
 
  document.getElementById('stopMic').onclick = () => {
@@ -328,11 +316,11 @@ with st.expander("💡 Guidance & Tips for Answering This Question (STAR Framewo
     * **Tip**: Keep your response concise, structured, and focused on your individual impact.
     """)
 
-browser_data = components.html(COMPONENT_HTML, height=540, scrolling=True)
+browser_data = components.html(COMPONENT_HTML, height=450, scrolling=True)
 if not isinstance(browser_data, dict): 
     browser_data = {}
 
-answer = st.text_area("Your response (transcribed or typed manually)", value=browser_data.get("answer", ""), height=120, key="answer_box")
+answer = st.text_area("Your response (transcribed or typed manually)", value=browser_data.get("answer", ""), height=110, key="answer_box")
 posture = browser_data.get("posture", "Waiting for camera…")
 
 # --- LIVE CANDIDATURE METRICS (CONFIDENCE, SKILLS, POSTURE BARS) ---
@@ -360,10 +348,6 @@ with col_m2:
 with col_m3:
     st.text(f"Posture & Stability ({posture_score}%)")
     st.progress(posture_score / 100.0)
-
-mc1, mc2 = st.columns(2)
-mc1.metric("Live Posture Analysis Status", posture)
-mc2.metric("Response Pacing Rating", "Optimal" if len(answer.split()) > 20 else "Awaiting detailed answer")
 
 def advanced_heuristic_feedback(text, posture_note, question=""):
     answer = (text or "").strip()
@@ -476,10 +460,8 @@ if st.session_state.answers:
             scores.append(0)
             labels.append(f"Q{idx} (Passed)")
 
-    # Calculate Overall Selection Odds
     if valid_scores_list:
         avg_score = sum(valid_scores_list) / len(valid_scores_list)
-        # Weighting: 70% answer quality, 15% posture, 15% professional attire/presentation
         selection_probability = int((avg_score * 0.70) + (posture_score * 0.15) + (85 * 0.15))
     else:
         selection_probability = 40
