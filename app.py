@@ -124,7 +124,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Calculate live indicator values beforehand so they can be injected into the UI
+# Calculate live indicator values beforehand
 num_responses = len(st.session_state.get("answers", []))
 conf_score = min(95, max(50, 65 + (num_responses * 8)))
 skill_score = min(95, max(60, 70 + (num_responses * 7)))
@@ -170,7 +170,6 @@ textarea{{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radiu
    <b>Visibility:</b> <span id="visibility">—</span>
   </div>
 
-  <!-- Live Indicators Right Next to Footage -->
   <div class="indicator-bar-container">
     <div>Confidence Level (<span id="confLbl">{conf_score}</span>%)</div>
     <div class="bar-track"><div class="bar-fill" id="confBar" style="width: {conf_score}%;"></div></div>
@@ -201,7 +200,7 @@ textarea{{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radiu
  </div>
 </div>
 <script>
-(() => {
+(() => {{
  const video=document.getElementById('video'), camStatus=document.getElementById('camStatus');
  const postureEl=document.getElementById('posture'), visibilityEl=document.getElementById('visibility');
  const micStatus=document.getElementById('micStatus'), answer=document.getElementById('answer');
@@ -209,13 +208,13 @@ textarea{{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radiu
  const postureBar=document.getElementById('postureBar'), postureBarLbl=document.getElementById('postureBarLbl');
  let stream=null, detector=null, recognition=null, finalText='';
 
- function send(){
+ function send(){{
   const value={{answer:answer.value,posture:postureEl.textContent,visibility:visibilityEl.textContent,camera_active:!!stream}};
   window.parent.postMessage({{isStreamlitMessage:true,type:'streamlit:setComponentValue',value}},'*');
- }
+ }}
 
- async function loadPose(){
-  try{
+ async function loadPose(){{
+  try{{
    const vision=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14');
    const files=await vision.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
    detector=await vision.PoseLandmarker.createFromOptions(files,{{
@@ -223,73 +222,75 @@ textarea{{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radiu
     runningMode:'VIDEO',numPoses:1
    }});
    camStatus.textContent='Camera active — live pose analysis running.';
-  }catch(e){camStatus.textContent='Pose model failed to load.';}
- }
+  }}catch(e){{camStatus.textContent='Pose model failed to load.';}}
+ }}
 
- function frame(now){
+ function frame(now){{
   if(!stream||video.readyState<2)return;
   if(detector){
-   try{
+   try{{
     const result=detector.detectForVideo(video,now), lm=result.landmarks&&result.landmarks[0];
-    if(lm&&lm.length>12){
+    if(lm&&lm.length>12){{
      const nose=lm[0], ls=lm[11], rs=lm[12];
      const vis=Math.round((((ls.visibility??0)+(rs.visibility??0))/2)*100);
      visibilityEl.textContent=vis+'%';
      const shoulderTilt=Math.abs(ls.y-rs.y), headOffset=Math.abs(nose.x-(ls.x+rs.x)/2);
      let pScore = 85;
-     if(vis<45){postureEl.textContent='Move back so face/shoulders visible.'; pScore=50;}
-     else if(shoulderTilt>.09){postureEl.textContent='Shoulders uneven; adjust posture.'; pScore=65;}
-     else if(headOffset>.13){postureEl.textContent='Head off-center; face forward.'; pScore=70;}
-     else{postureEl.textContent='Posture well-centered & balanced.'; pScore=95;}
+     if(vis<45){{postureEl.textContent='Move back so face/shoulders visible.'; pScore=50;}}
+     else if(shoulderTilt>.09){{postureEl.textContent='Shoulders uneven; adjust posture.'; pScore=65;}}
+     else if(headOffset>.13){{postureEl.textContent='Head off-center; face forward.'; pScore=70;}}
+     else{{postureEl.textContent='Posture well-centered & balanced.'; pScore=95;}}
      
      postureBar.style.width = pScore + '%';
      postureBarLbl.textContent = pScore;
-    }else{postureEl.textContent='Person not detected clearly.';visibilityEl.textContent='Low';}
-   }catch(e){{}}
-  }
+    }}else{{postureEl.textContent='Person not detected clearly.';visibilityEl.textContent='Low';}}
+   }}catch(e){{}}
+  }}
   requestAnimationFrame(frame);
- }
+ }}
 
- document.getElementById('startCam').onclick=async()=>{
-  try{stream=await navigator.mediaDevices.getUserMedia({{video:{{facingMode:'user'}},audio:false}});video.srcObject=stream;
-   camStatus.textContent='Camera started. Loading pose model…';await loadPose();requestAnimationFrame(frame);send();}
-  catch(e){camStatus.textContent='Camera permission denied.';}
- };
+ document.getElementById('startCam').onclick=async()=>{{\
+  try{{stream=await navigator.mediaDevices.getUserMedia({{video:{{facingMode:'user'}},audio:false}});video.srcObject=stream;
+   camStatus.textContent='Camera started. Loading pose model…';await loadPose();requestAnimationFrame(frame);send();}}
+  catch(e){{camStatus.textContent='Camera permission denied.';}}
+ }};
 
- document.getElementById('stopCam').onclick=()=>{if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;postureEl.textContent='Camera stopped.';visibilityEl.textContent='—';camStatus.textContent='Camera stopped.';send();};
+ document.getElementById('stopCam').onclick=()=>{{\
+  if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;postureEl.textContent='Camera stopped.';visibilityEl.textContent='—';camStatus.textContent='Camera stopped.';send();
+ }};
 
- document.getElementById('startMic').onclick=()=>{
+ document.getElementById('startMic').onclick=()=>{{\
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){ micStatus.innerHTML = '⚠️ Speech recognition unsupported. Type answer below.'; return; }
-  try {
+  if(!SR){{ micStatus.innerHTML = '⚠️ Speech recognition unsupported. Type answer below.'; return; }}
+  try {{
    recognition = new SR(); recognition.continuous = true; recognition.interimResults = true; recognition.lang = 'en-US';
    finalText = answer.value ? answer.value + ' ' : '';
-   recognition.onstart = () => {
+   recognition.onstart = () => {{
     micStatus.innerHTML = '<span class="listening-badge"></span><strong>Listening… speak clearly.</strong>';
     micPanel.classList.add('mic-active-box');
-   };
+   }};
    recognition.onerror = e => {{ micStatus.textContent = '❌ Error: ' + e.error; micPanel.classList.remove('mic-active-box'); }};
    recognition.onend = () => {{ micStatus.textContent = 'Microphone stopped listening.'; micPanel.classList.remove('mic-active-box'); send(); }};
-   recognition.onresult = e => {
+   recognition.onresult = e => {{
     let interim = '';
-    for(let i = e.resultIndex; i < e.results.length; i++){
+    for(let i = e.resultIndex; i < e.results.length; i++){{
      let t = e.results[i][0].transcript;
      if(e.results[i].isFinal) finalText += t + ' '; else interim += t;
-    }
+    }}
     answer.value = (finalText + interim).trim(); send();
-   };
+   }};
    recognition.start();
-  } catch(err) { micStatus.textContent = 'Failed to start mic: ' + err.message; }
- };
+  }} catch(err) {{ micStatus.textContent = 'Failed to start mic: ' + err.message; }}
+ }};
 
- document.getElementById('stopMic').onclick = () => {
+ document.getElementById('stopMic').onclick = () => {{
   if(recognition) recognition.stop();
   micPanel.classList.remove('mic-active-box');
   micStatus.textContent = 'Microphone stopped.';
- };
+ }};
 
  answer.addEventListener('input', send);
-})();
+}})();
 </script>
 </div>
 """
